@@ -5,6 +5,7 @@ import { Spinner, EmptyState } from "@mercadovivo/ui";
 import { CardVendo } from "../components/feed/CardVendo";
 import { FiltroRubros } from "../components/feed/FiltroRubros";
 import { Buscador } from "../components/feed/Buscador";
+import { Link } from "react-router-dom";
 
 export default function FeedVendo() {
   const [rubroFiltro, setRubroFiltro] = useState<Rubro | undefined>();

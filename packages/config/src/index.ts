@@ -42,14 +42,26 @@ export const TIPOGRAFIAS = {
   mono: "JetBrains Mono, monospace",
 } as const;
 
-export const FIREBASE_CONFIG = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY ?? process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? "",
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN ?? process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID ?? process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? "",
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET ?? process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
-  appId: process.env.VITE_FIREBASE_APP_ID ?? process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? "",
+declare const __FIREBASE_CONFIG__: {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
 };
+
+export const FIREBASE_CONFIG =
+  typeof __FIREBASE_CONFIG__ !== "undefined"
+    ? __FIREBASE_CONFIG__
+    : {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: "",
+      };
 
 export const ESTADOS_ENVIO = [
   "pendiente",
