@@ -1,0 +1,14 @@
+{
+  "name": "@mercadovivo/firebase",
+  "version": "0.1.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@mercadovivo/config": "workspace:*",
+    "@mercadovivo/types": "workspace:*",
+    "firebase": "^10.12.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,85 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol;
+    }
+
+    function isComercio() {
+      return isAuth() && getUserRole() == 'comercio';
+    }
+
+    function isAdmin() {
+      return isAuth() && getUserRole() == 'admin';
+    }
+
+    function isCadete() {
+      return isAuth() && getUserRole() == 'cadete';
+    }
+
+    // Usuarios: lectura pública de perfil básico, escritura solo el propio usuario
+    match /usuarios/{userId} {
+      allow read: if isAuth();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+    }
+
+    // Publicaciones #Vendo: lectura pública, solo comercios publican
+    match /publicaciones_vendo/{pubId} {
+      allow read: if true;
+      allow create: if isComercio();
+      allow update, delete: if isAuth() &&
+        resource.data.comercioId == request.auth.uid;
+    }
+
+    // Publicaciones #Busco: lectura para autenticados, cualquier usuario puede publicar
+    match /publicaciones_busco/{pubId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth() &&
+        resource.data.clienteId == request.auth.uid;
+    }
+
+    // Ofertas: comercios crean, cliente y comercio involucrados pueden leer
+    match /ofertas_comercio/{ofertaId} {
+      allow read: if isAuth();
+      allow create: if isComercio();
+      allow update: if isAdmin();
+    }
+
+    // Chats: solo los participantes pueden leer y escribir
+    match /chats/{chatId} {
+      allow read, update: if isAuth() && (
+        resource.data.clienteId == request.auth.uid ||
+        resource.data.comercioId == request.auth.uid
+      );
+      allow create: if isAuth();
+    }
+
+    // Mensajes: solo participantes del chat
+    match /mensajes/{msgId} {
+      allow read, create: if isAuth();
+    }
+
+    // Solicitudes de envío
+    match /solicitudes_envio/{envioId} {
+      allow read: if isAuth() && (
+        resource.data.clienteId == request.auth.uid ||
+        resource.data.cadeteId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuth();
+      allow update: if isCadete() || isAdmin();
+    }
+  }
+}

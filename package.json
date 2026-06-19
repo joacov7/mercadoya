@@ -1,0 +1,19 @@
+{
+  "name": "mercadovivo",
+  "private": true,
+  "version": "0.1.0",
+  "engines": { "node": ">=18", "pnpm": ">=8" },
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:mobile": "pnpm --filter mobile start",
+    "build:web": "pnpm --filter web build",
+    "seed": "tsx scripts/seed.ts",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "tsx": "^4.10.0"
+  }
+}
