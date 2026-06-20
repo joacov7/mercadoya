@@ -1,113 +1,152 @@
-import React, { useState } from "react";
+import React from "react";
 import {
-  View,
-  Text,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  ActivityIndicator,
-  Linking,
+  View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image,
 } from "react-native";
-import { usePublicacionesVendo } from "@mercadovivo/hooks";
-import { RUBROS, type Rubro, APP_WHATSAPP_DEFAULT } from "@mercadovivo/config";
-import type { PublicacionVendo } from "@mercadovivo/types";
+import { router } from "expo-router";
+import { useAuth } from "@mercadovivo/hooks";
+import { useChats } from "@mercadovivo/hooks";
+import { usePublicacionesVendo, usePublicacionesBusco } from "@mercadovivo/hooks";
+import type { PublicacionVendo, PublicacionBusco } from "@mercadovivo/types";
 
-function CardVendo({ item }: { item: PublicacionVendo }) {
-  const url = `https://wa.me/${APP_WHATSAPP_DEFAULT}?text=${encodeURIComponent(`Hola! Me interesa: "${item.titulo}"`)}`;
+function MiniCardVendo({ item }: { item: PublicacionVendo }) {
   return (
-    <View className="bg-white rounded-2xl overflow-hidden mb-4 mx-4 shadow-sm border border-gray-100">
+    <TouchableOpacity
+      className="w-44 bg-white rounded-2xl overflow-hidden mr-3 border border-gray-100 shadow-sm"
+      onPress={() => router.push(`/vendo/${item.id}` as any)}
+    >
       {item.imagenes?.[0] ? (
-        <Image source={{ uri: item.imagenes[0] }} className="w-full h-44" resizeMode="cover" />
+        <Image source={{ uri: item.imagenes[0] }} style={{ width: "100%", height: 110 }} resizeMode="cover" />
       ) : (
-        <View className="w-full h-44 bg-green-50 items-center justify-center">
-          <Text className="text-5xl">🛍️</Text>
+        <View className="w-full items-center justify-center bg-green-50" style={{ height: 110 }}>
+          <Text style={{ fontSize: 36 }}>🛍️</Text>
         </View>
       )}
-      <View className="p-4">
-        <View className="flex-row items-start justify-between gap-2 mb-1">
-          <Text className="font-semibold text-gray-900 text-base flex-1" numberOfLines={2}>{item.titulo}</Text>
-          <View className="bg-green-100 px-2 py-0.5 rounded-full">
-            <Text className="text-green-700 text-xs font-medium">{item.rubro}</Text>
-          </View>
-        </View>
-        <Text className="text-gray-500 text-sm mb-3" numberOfLines={2}>{item.descripcion}</Text>
-        {item.precio > 0 && (
-          <Text className="text-green-700 font-bold text-lg mb-3">
-            ${item.precio.toLocaleString("es-AR")}
-          </Text>
-        )}
-        <TouchableOpacity
-          className="bg-amber-500 py-3 rounded-xl items-center"
-          onPress={() => Linking.openURL(url)}
-        >
-          <Text className="text-white font-semibold">💬 Me interesa</Text>
-        </TouchableOpacity>
+      <View className="p-3">
+        <Text className="font-semibold text-gray-900 text-sm" numberOfLines={2}>{item.titulo}</Text>
+        <Text className="text-green-700 font-bold text-base mt-1">${item.precio.toLocaleString("es-AR")}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
-export default function FeedVendoScreen() {
-  const [rubroFiltro, setRubroFiltro] = useState<Rubro | undefined>();
-  const [busqueda, setBusqueda] = useState("");
-  const { publicaciones, loading } = usePublicacionesVendo(rubroFiltro);
-
-  const filtradas = publicaciones.filter((p) =>
-    p.titulo.toLowerCase().includes(busqueda.toLowerCase())
+function CardBuscoMini({ item }: { item: PublicacionBusco }) {
+  return (
+    <TouchableOpacity
+      className="bg-white rounded-2xl p-4 mb-2 border border-gray-100 flex-row items-center"
+      onPress={() => router.push(`/busco/${item.id}` as any)}
+    >
+      <View className="w-10 h-10 bg-amber-100 rounded-full items-center justify-center mr-3">
+        <Text style={{ fontSize: 18 }}>🔍</Text>
+      </View>
+      <View className="flex-1">
+        <Text className="font-medium text-gray-900 text-sm" numberOfLines={1}>{item.titulo}</Text>
+        <Text className="text-xs text-gray-400 mt-0.5">{item.rubro}</Text>
+      </View>
+      <Text className="text-gray-300 text-lg">›</Text>
+    </TouchableOpacity>
   );
+}
+
+export default function HomeScreen() {
+  const { usuario } = useAuth();
+  const { unreadCount, chats } = useChats(usuario?.id);
+  const { publicaciones: vendo, loading: loadingVendo } = usePublicacionesVendo();
+  const { publicaciones: busco, loading: loadingBusco } = usePublicacionesBusco();
+
+  const vendoRecientes = vendo.filter((p) => p.comercioId !== usuario?.id).slice(0, 8);
+  const buscoRecientes = busco.filter((p) => p.clienteId !== usuario?.id).slice(0, 4);
+
+  if (!usuario) {
+    return (
+      <View className="flex-1 items-center justify-center px-8 bg-white">
+        <Text style={{ fontSize: 64 }}>🛒</Text>
+        <Text className="text-2xl font-bold text-gray-900 mt-4 text-center">MercadoVivo</Text>
+        <Text className="text-gray-500 text-center mt-2 mb-8">El mercado local de Gualeguay</Text>
+        <TouchableOpacity className="bg-green-600 w-full py-4 rounded-2xl items-center mb-3" onPress={() => router.push("/register")}>
+          <Text className="text-white font-bold text-base">Registrarme gratis</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push("/login")}>
+          <Text className="text-green-600 font-medium">Ya tengo cuenta</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="px-4 pt-4 pb-2 bg-white border-b border-gray-100">
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-3 py-2.5 mb-3">
-          <Text className="text-gray-400 mr-2">🔍</Text>
-          <TextInput
-            placeholder="Buscar productos..."
-            value={busqueda}
-            onChangeText={setBusqueda}
-            className="flex-1 text-sm text-gray-900"
-            placeholderTextColor="#9ca3af"
-          />
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <TouchableOpacity
-            onPress={() => setRubroFiltro(undefined)}
-            className={`mr-2 px-4 py-2 rounded-full border ${!rubroFiltro ? "bg-green-600 border-green-600" : "bg-white border-gray-200"}`}
-          >
-            <Text className={`text-sm font-medium ${!rubroFiltro ? "text-white" : "text-gray-600"}`}>Todos</Text>
+    <ScrollView className="flex-1 bg-gray-50">
+      {/* Header saludo */}
+      <View className="bg-green-600 px-5 pt-6 pb-8">
+        <Text className="text-green-200 text-sm font-medium">Bienvenido de vuelta</Text>
+        <Text className="text-white text-2xl font-bold mt-1">{usuario.nombre.split(" ")[0]} 👋</Text>
+        <View className="flex-row gap-3 mt-4">
+          <TouchableOpacity className="bg-white/20 px-4 py-2 rounded-xl flex-1 items-center" onPress={() => router.push("/(tabs)/publicar")}>
+            <Text className="text-white font-semibold text-sm">+ Publicar</Text>
           </TouchableOpacity>
-          {RUBROS.map((r) => (
-            <TouchableOpacity
-              key={r}
-              onPress={() => setRubroFiltro(r === rubroFiltro ? undefined : r)}
-              className={`mr-2 px-4 py-2 rounded-full border ${rubroFiltro === r ? "bg-green-600 border-green-600" : "bg-white border-gray-200"}`}
-            >
-              <Text className={`text-sm font-medium ${rubroFiltro === r ? "text-white" : "text-gray-600"}`}>{r}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+          <TouchableOpacity className="bg-white/20 px-4 py-2 rounded-xl flex-1 items-center" onPress={() => router.push("/(tabs)/vendo")}>
+            <Text className="text-white font-semibold text-sm">Ver Vendo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity className="bg-white/20 px-4 py-2 rounded-xl flex-1 items-center" onPress={() => router.push("/(tabs)/busco")}>
+            <Text className="text-white font-semibold text-sm">Ver Busco</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#16a34a" size="large" />
+      <View className="px-4 -mt-4">
+        {/* Stats */}
+        <View className="flex-row gap-3 mb-6">
+          <TouchableOpacity
+            className="flex-1 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"
+            onPress={() => router.push("/(tabs)/chats")}
+          >
+            <Text style={{ fontSize: 24 }}>💬</Text>
+            <Text className="text-2xl font-bold text-gray-900 mt-1">{chats.length}</Text>
+            <Text className="text-xs text-gray-400">Chats</Text>
+            {unreadCount > 0 && (
+              <View className="absolute top-3 right-3 bg-red-500 w-5 h-5 rounded-full items-center justify-center">
+                <Text className="text-white text-xs font-bold">{unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="flex-1 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm"
+            onPress={() => router.push("/(tabs)/perfil")}
+          >
+            <Text style={{ fontSize: 24 }}>⭐</Text>
+            <Text className="text-2xl font-bold text-gray-900 mt-1">{usuario.reputacion?.total ?? "—"}</Text>
+            <Text className="text-xs text-gray-400">Calificaciones</Text>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={filtradas}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <CardVendo item={item} />}
-          contentContainerStyle={{ paddingVertical: 16 }}
-          ListEmptyComponent={
-            <View className="items-center py-20">
-              <Text className="text-4xl mb-4">🏪</Text>
-              <Text className="text-gray-500 text-base">No hay publicaciones aún</Text>
+
+        {/* Vendo reciente */}
+        <View className="mb-6">
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="font-semibold text-gray-900 text-base">Últimos en Vendo</Text>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/vendo")}>
+              <Text className="text-green-600 text-sm font-medium">Ver todo</Text>
+            </TouchableOpacity>
+          </View>
+          {loadingVendo ? (
+            <ActivityIndicator color="#16a34a" />
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {vendoRecientes.map((p) => <MiniCardVendo key={p.id} item={p} />)}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* Busco reciente */}
+        {!loadingBusco && buscoRecientes.length > 0 && (
+          <View className="mb-6">
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="font-semibold text-gray-900 text-base">Vecinos que buscan</Text>
+              <TouchableOpacity onPress={() => router.push("/(tabs)/busco")}>
+                <Text className="text-green-600 text-sm font-medium">Ver todo</Text>
+              </TouchableOpacity>
             </View>
-          }
-        />
-      )}
-    </View>
+            {buscoRecientes.map((p) => <CardBuscoMini key={p.id} item={p} />)}
+          </View>
+        )}
+      </View>
+    </ScrollView>
   );
 }

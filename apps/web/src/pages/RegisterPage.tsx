@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerEmail } from "@mercadovivo/firebase";
 import { crearUsuario } from "@mercadovivo/core";
-import { APP_NAME, ROLES, type Rol } from "@mercadovivo/config";
-import { Button, Input, Select } from "@mercadovivo/ui";
+import { APP_NAME } from "@mercadovivo/config";
+import { Button, Input } from "@mercadovivo/ui";
 
 export default function RegisterPage() {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [rol, setRol] = useState<Rol>("cliente");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,20 +25,15 @@ export default function RegisterPage() {
         email,
         telefono,
         whatsapp: telefono,
-        rol,
+        rol: "cliente",
       });
-      navigate("/vendo");
+      navigate("/home");
     } catch {
       setError("No se pudo crear la cuenta. El email ya puede estar en uso.");
     } finally {
       setLoading(false);
     }
   };
-
-  const rolesOptions = ROLES.filter((r) => r !== "admin").map((r) => ({
-    value: r,
-    label: r.charAt(0).toUpperCase() + r.slice(1),
-  }));
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
@@ -53,12 +47,6 @@ export default function RegisterPage() {
           <Input label="Nombre completo" value={nombre} onChange={(e) => setNombre(e.target.value)} required placeholder="Juan García" />
           <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="tu@email.com" />
           <Input label="Teléfono / WhatsApp" value={telefono} onChange={(e) => setTelefono(e.target.value)} required placeholder="3446123456" />
-          <Select
-            label="Soy..."
-            value={rol}
-            onChange={(e) => setRol(e.target.value as Rol)}
-            options={rolesOptions}
-          />
           <Input label="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Mínimo 6 caracteres" minLength={6} />
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <Button type="submit" loading={loading} size="lg" className="w-full">Crear cuenta</Button>
