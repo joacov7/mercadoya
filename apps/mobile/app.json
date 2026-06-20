@@ -1,40 +1,6 @@
 {
   "expo": {
     "name": "MercadoVivo",
-    "slug": "mercadovivo",
-    "version": "0.1.0",
-    "scheme": "mercadovivo",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#16A34A"
-    },
-    "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.mercadovivo.app"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#16A34A"
-      },
-      "package": "com.mercadovivo.app"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#16A34A"
-        }
-      ]
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    "slug": "mercadovivo"
   }
 }
