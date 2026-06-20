@@ -12,8 +12,8 @@ export default function LandingPage() {
           <span className="font-bold text-green-700 text-xl">{APP_NAME}</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link to="/vendo" className="text-gray-600 hover:text-gray-900 text-sm font-medium">#Vendo</Link>
-          <Link to="/busco" className="text-gray-600 hover:text-gray-900 text-sm font-medium">#Busco</Link>
+          <Link to="/vendo" className="text-gray-600 hover:text-gray-900 text-sm font-medium">Vendo</Link>
+          <Link to="/busco" className="text-gray-600 hover:text-gray-900 text-sm font-medium">Busco</Link>
           <Link to="/login" className="text-gray-600 hover:text-gray-900 text-sm font-medium">Ingresar</Link>
           <Link to="/register" className="bg-green-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors">
             Registrarse gratis

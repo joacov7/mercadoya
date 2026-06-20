@@ -44,7 +44,7 @@ export default function PublicarVendo() {
   return (
     <div className="max-w-lg mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Publicar #Vendo</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Publicar Vendo</h1>
         <p className="text-gray-500 text-sm mt-1">Publicá tu producto o servicio</p>
       </div>
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-5">

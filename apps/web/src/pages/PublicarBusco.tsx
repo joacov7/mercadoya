@@ -38,7 +38,7 @@ export default function PublicarBusco() {
   return (
     <div className="max-w-lg mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Publicar #Busco</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Publicar Busco</h1>
         <p className="text-gray-500 text-sm mt-1">En 3 simples pasos los comercios te contactarán</p>
       </div>
 
@@ -70,7 +70,7 @@ export default function PublicarBusco() {
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
         <Button type="submit" loading={loading} size="lg" className="w-full mt-2">
-          Publicar #Busco
+          Publicar Busco
         </Button>
       </form>
     </div>

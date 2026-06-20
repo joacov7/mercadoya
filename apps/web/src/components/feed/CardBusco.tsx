@@ -22,7 +22,7 @@ export function CardBusco({ publicacion, onOfrecer, esComercio }: Props) {
       <div className="p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">#Busco</span>
+            <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">Busco</span>
             <h3 className="font-semibold text-gray-900 text-base leading-tight mt-0.5">
               {publicacion.titulo}
             </h3>

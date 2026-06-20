@@ -76,7 +76,7 @@ export default function DetalleBusco() {
       <Card className="p-6">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
-            <span className="text-xs text-gray-400 uppercase tracking-wide font-medium">#Busco</span>
+            <span className="text-xs text-gray-400 uppercase tracking-wide font-medium">Busco</span>
             <h1 className="text-xl font-bold text-gray-900 mt-1">{publicacion.titulo}</h1>
           </div>
           <Badge label={publicacion.rubro} color="amber" />

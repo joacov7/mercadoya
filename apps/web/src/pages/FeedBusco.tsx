@@ -16,47 +16,111 @@ function tiempoRelativo(ts: number): string {
   return `hace ${Math.floor(hs / 24)} días`;
 }
 
+interface ModalOfertaProps {
+  publicacion: PublicacionBusco;
+  onClose: () => void;
+  onEnviada: () => void;
+}
+
+function ModalOferta({ publicacion, onClose, onEnviada }: ModalOfertaProps) {
+  const { usuario } = useAuth();
+  const [mensaje, setMensaje] = useState("");
+  const [precio, setPrecio] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuario || !mensaje || !precio) return;
+    setLoading(true);
+    setError("");
+    try {
+      await crearOferta({
+        publicacionBuscoId: publicacion.id,
+        comercioId: usuario.id,
+        nombreComercio: usuario.nombre,
+        mensaje,
+        precio: Number(precio),
+      });
+      onEnviada();
+      onClose();
+    } catch {
+      setError("No se pudo enviar la oferta. Intentá de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+      <div className="bg-white rounded-3xl w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6">
+          <h3 className="font-bold text-gray-900 text-lg mb-1">Hacer una oferta</h3>
+          <p className="text-gray-500 text-sm mb-5">
+            Solicitud: <span className="font-medium text-gray-700">"{publicacion.titulo}"</span>
+          </p>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Tu propuesta</label>
+              <textarea
+                value={mensaje}
+                onChange={(e) => setMensaje(e.target.value)}
+                placeholder="Describí qué podés ofrecer, disponibilidad, condiciones..."
+                rows={3}
+                required
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Precio ($)</label>
+              <input
+                type="number"
+                value={precio}
+                onChange={(e) => setPrecio(e.target.value)}
+                placeholder="0"
+                min="0"
+                required
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+
+            <div className="flex gap-3 mt-1">
+              <Button type="submit" loading={loading} className="flex-1">
+                Enviar oferta
+              </Button>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FeedBusco() {
   const [rubroFiltro, setRubroFiltro] = useState<Rubro | undefined>();
   const { publicaciones, loading } = usePublicacionesBusco(rubroFiltro);
   const { usuario } = useAuth();
   const navigate = useNavigate();
   const esComercio = usuario?.rol === "comercio";
-  const [loadingOferta, setLoadingOferta] = useState<string | null>(null);
-
-  const handleOfrecer = async (e: React.MouseEvent, pub: PublicacionBusco) => {
-    e.stopPropagation();
-    if (!usuario) { navigate("/login"); return; }
-
-    const mensaje = window.prompt(`Oferta para: "${pub.titulo}"\n\nDescribí tu propuesta:`);
-    if (!mensaje) return;
-    const precioStr = window.prompt("¿Cuál es tu precio? (solo el número)");
-    if (!precioStr) return;
-
-    setLoadingOferta(pub.id);
-    try {
-      await crearOferta({
-        publicacionBuscoId: pub.id,
-        comercioId: usuario.id,
-        nombreComercio: usuario.nombre,
-        mensaje,
-        precio: Number(precioStr),
-      });
-      alert("✅ ¡Oferta enviada! El cliente la verá en su publicación.");
-    } finally {
-      setLoadingOferta(null);
-    }
-  };
+  const [modalPub, setModalPub] = useState<PublicacionBusco | null>(null);
+  const [enviado, setEnviado] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">#Busco en Gualeguay</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Busco en Gualeguay</h1>
           <p className="text-gray-500 text-sm mt-1">Lo que los vecinos necesitan hoy</p>
         </div>
         <Link to="/publicar">
-          <Button size="sm">+ Publicar #Busco</Button>
+          <Button size="sm">+ Publicar</Button>
         </Link>
       </div>
 
@@ -75,14 +139,11 @@ export default function FeedBusco() {
 
       <div className="flex flex-col gap-3">
         {publicaciones.map((p) => (
-          <Card
-            key={p.id}
-            onClick={() => navigate(`/busco/${p.id}`)}
-          >
+          <Card key={p.id} onClick={() => navigate(`/busco/${p.id}`)}>
             <div className="p-4">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex-1">
-                  <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">#Busco</span>
+                  <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">Busco</span>
                   <h3 className="font-semibold text-gray-900 text-base leading-tight mt-0.5">{p.titulo}</h3>
                 </div>
                 <Badge label={p.rubro} color="amber" />
@@ -92,15 +153,17 @@ export default function FeedBusco() {
               )}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">{tiempoRelativo(p.createdAt)}</span>
-                <div className="flex gap-2">
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                   {esComercio && (
                     <Button
                       size="sm"
-                      loading={loadingOferta === p.id}
-                      onClick={(e) => handleOfrecer(e, p)}
+                      onClick={() => setModalPub(p)}
                     >
-                      📦 Ofrecer
+                      Hacer oferta
                     </Button>
+                  )}
+                  {enviado === p.id && (
+                    <span className="text-xs text-green-600 font-medium self-center">✓ Oferta enviada</span>
                   )}
                   {!esComercio && usuario?.id === p.clienteId && (
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
@@ -113,6 +176,14 @@ export default function FeedBusco() {
           </Card>
         ))}
       </div>
+
+      {modalPub && (
+        <ModalOferta
+          publicacion={modalPub}
+          onClose={() => setModalPub(null)}
+          onEnviada={() => setEnviado(modalPub.id)}
+        />
+      )}
     </div>
   );
 }

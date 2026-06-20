@@ -28,8 +28,8 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
-            <NavLink to="/vendo" className={linkClass}>#Vendo</NavLink>
-            <NavLink to="/busco" className={linkClass}>#Busco</NavLink>
+            <NavLink to="/vendo" className={linkClass}>Vendo</NavLink>
+            <NavLink to="/busco" className={linkClass}>Busco</NavLink>
             {firebaseUser && <NavLink to="/publicar" className={linkClass}>Publicar</NavLink>}
           </div>
 

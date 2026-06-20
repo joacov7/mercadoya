@@ -101,7 +101,7 @@ export default function PerfilPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">
-                        {chat.tipo === "busco" ? "#Busco" : "#Vendo"}
+                        {chat.tipo === "busco" ? "Busco" : "Vendo"}
                       </p>
                       <p className="text-sm text-gray-700 mt-0.5 truncate max-w-xs">
                         {chat.lastMessage ?? "Sin mensajes aún"}
