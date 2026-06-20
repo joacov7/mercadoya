@@ -27,6 +27,8 @@ module.exports = {
     scheme: "mercadovivo",
     orientation: "portrait",
     userInterfaceStyle: "light",
+    icon: null,
+    splash: null,
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.mercadovivo.app",
