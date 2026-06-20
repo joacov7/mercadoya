@@ -14,4 +14,30 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
+// Forzar UNA sola copia de react-native y react: siempre las de la raíz del
+// monorepo. Si quedó un node_modules viejo en apps/mobile (residuo de una
+// instalación anterior en Windows), Metro lo ignora para estos paquetes y no
+// se mezclan versiones (causa del error "getDevServer is not a function").
+const rootModules = path.join(workspaceRoot, "node_modules");
+const forceSingle = ["react-native", "react"];
+const defaultResolveRequest = config.resolver.resolveRequest;
+
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  const forced = forceSingle.find(
+    (name) => moduleName === name || moduleName.startsWith(name + "/")
+  );
+  if (forced) {
+    // Reanclar el origen a la raíz para que el walk-up encuentre la copia
+    // correcta primero, incluyendo subpaths (react-native/Libraries/...).
+    return context.resolveRequest(
+      { ...context, originModulePath: path.join(rootModules, "index.js") },
+      moduleName,
+      platform
+    );
+  }
+  return defaultResolveRequest
+    ? defaultResolveRequest(context, moduleName, platform)
+    : context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;
