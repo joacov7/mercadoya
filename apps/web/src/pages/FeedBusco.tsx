@@ -3,19 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { usePublicacionesBusco } from "@mercadovivo/hooks";
 import { useAuth } from "@mercadovivo/hooks";
 import { type Rubro } from "@mercadovivo/config";
-import { Spinner, EmptyState, Button, Card, Badge } from "@mercadovivo/ui";
+import { Spinner, EmptyState, Button } from "@mercadovivo/ui";
 import { FiltroRubros } from "../components/feed/FiltroRubros";
 import { Buscador } from "../components/feed/Buscador";
+import { CardBusco } from "../components/feed/CardBusco";
 import { crearOferta } from "@mercadovivo/core";
 import type { PublicacionBusco } from "@mercadovivo/types";
 
-function tiempoRelativo(ts: number): string {
-  const mins = Math.floor((Date.now() - ts) / 60000);
-  if (mins < 60) return `hace ${mins} min`;
-  const hs = Math.floor(mins / 60);
-  if (hs < 24) return `hace ${hs}h`;
-  return `hace ${Math.floor(hs / 24)} días`;
-}
 
 interface ModalOfertaProps {
   publicacion: PublicacionBusco;
@@ -143,33 +137,14 @@ export default function FeedBusco() {
 
       <div className="flex flex-col gap-3">
         {filtradas.map((p) => (
-          <Card key={p.id} onClick={() => navigate(`/busco/${p.id}`)}>
-            <div className="p-4">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex-1">
-                  <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">Busco</span>
-                  <h3 className="font-semibold text-gray-900 text-base leading-tight mt-0.5">{p.titulo}</h3>
-                </div>
-                <Badge label={p.rubro} color="amber" />
-              </div>
-              {p.descripcion && (
-                <p className="text-gray-500 text-sm mb-3 line-clamp-2">{p.descripcion}</p>
-              )}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">{tiempoRelativo(p.createdAt)}</span>
-                <div onClick={(e) => e.stopPropagation()}>
-                  {usuario && !enviados.has(p.id) && (
-                    <Button size="sm" onClick={() => setModalPub(p)}>
-                      Hacer oferta
-                    </Button>
-                  )}
-                  {enviados.has(p.id) && (
-                    <span className="text-xs text-green-600 font-medium">✓ Oferta enviada</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
+          <CardBusco
+            key={p.id}
+            publicacion={p}
+            onClick={() => navigate(`/busco/${p.id}`)}
+            mostrarBotonOferta={!!usuario}
+            ofertaEnviada={enviados.has(p.id)}
+            onOferta={() => setModalPub(p)}
+          />
         ))}
       </div>
 

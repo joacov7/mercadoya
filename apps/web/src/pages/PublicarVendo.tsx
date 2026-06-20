@@ -4,6 +4,7 @@ import { useAuth } from "@mercadovivo/hooks";
 import { publicarVendo } from "@mercadovivo/core";
 import { RUBROS, type Rubro } from "@mercadovivo/config";
 import { Button, Input, Textarea, Select } from "@mercadovivo/ui";
+import { ImageUploader } from "../components/ui/ImageUploader";
 
 export default function PublicarVendo() {
   const { usuario } = useAuth();
@@ -14,6 +15,7 @@ export default function PublicarVendo() {
   const [precio, setPrecio] = useState("");
   const [stock, setStock] = useState("");
   const [envioDisponible, setEnvioDisponible] = useState(false);
+  const [imagenUrl, setImagenUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -30,7 +32,7 @@ export default function PublicarVendo() {
         rubro: rubro as Rubro,
         precio: Number(precio),
         stock: Number(stock),
-        imagenes: [],
+        imagenes: imagenUrl ? [imagenUrl] : [],
         stockDisponible: Number(stock) > 0,
         envioDisponible,
         activo: true,
@@ -50,6 +52,15 @@ export default function PublicarVendo() {
         <p className="text-gray-500 text-sm mt-1">Publicá tu producto o servicio</p>
       </div>
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Foto del producto</label>
+          <ImageUploader
+            value={imagenUrl}
+            onUpload={setImagenUrl}
+            onRemove={() => setImagenUrl("")}
+            folder="publicaciones"
+          />
+        </div>
         <Input
           label="Título del producto"
           placeholder='Ej: "Asado vacío 1kg"'

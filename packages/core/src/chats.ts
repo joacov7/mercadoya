@@ -58,7 +58,34 @@ export async function enviarMensaje(
   await updateDoc(doc(db, COLECCIONES.CHATS, chatId), {
     updatedAt: Date.now(),
     lastMessage: texto,
+    lastSenderId: remitenteId,
   });
+}
+
+export function suscribirChatsUsuario(
+  userId: string,
+  cb: (chats: Chat[]) => void
+): () => void {
+  const q1 = query(
+    collection(db, COLECCIONES.CHATS),
+    where("clienteId", "==", userId),
+    orderBy("updatedAt", "desc")
+  );
+  const q2 = query(
+    collection(db, COLECCIONES.CHATS),
+    where("comercioId", "==", userId),
+    orderBy("updatedAt", "desc")
+  );
+  let chats1: Chat[] = [];
+  let chats2: Chat[] = [];
+  const emit = () => {
+    const all = [...chats1, ...chats2];
+    const unique = Array.from(new Map(all.map((c) => [c.id, c])).values());
+    cb(unique.sort((a, b) => b.updatedAt - a.updatedAt));
+  };
+  const unsub1 = onSnapshot(q1, (snap) => { chats1 = snap.docs.map((d) => d.data() as Chat); emit(); });
+  const unsub2 = onSnapshot(q2, (snap) => { chats2 = snap.docs.map((d) => d.data() as Chat); emit(); });
+  return () => { unsub1(); unsub2(); };
 }
 
 export function suscribirMensajes(

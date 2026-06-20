@@ -1,26 +1,28 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@mercadovivo/hooks";
-import { listarChatsUsuario } from "@mercadovivo/core";
-import type { Chat } from "@mercadovivo/types";
+import { useChats } from "@mercadovivo/hooks";
 import { Spinner, Card, EmptyState } from "@mercadovivo/ui";
+
+function tiempoRelativo(ts: number): string {
+  const mins = Math.floor((Date.now() - ts) / 60000);
+  if (mins < 2) return "ahora";
+  if (mins < 60) return `hace ${mins} min`;
+  const hs = Math.floor(mins / 60);
+  if (hs < 24) return `hace ${hs}h`;
+  return `hace ${Math.floor(hs / 24)} días`;
+}
 
 export default function ChatsPage() {
   const { usuario, loading } = useAuth();
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [loadingChats, setLoadingChats] = useState(true);
-
-  useEffect(() => {
-    if (!usuario) return;
-    listarChatsUsuario(usuario.id)
-      .then((result) => {
-        const unique = Array.from(new Map(result.map((c) => [c.id, c])).values());
-        setChats(unique);
-      })
-      .finally(() => setLoadingChats(false));
-  }, [usuario]);
+  const { chats, loading: loadingChats } = useChats(usuario?.id);
 
   if (loading || loadingChats) return <div className="py-20 flex justify-center"><Spinner /></div>;
+
+  const tieneNoLeidos = (chatId: string) => {
+    const chat = chats.find((c) => c.id === chatId);
+    return chat?.lastSenderId && chat.lastSenderId !== usuario?.id;
+  };
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-6">
@@ -36,31 +38,39 @@ export default function ChatsPage() {
           icon="💬"
         />
       ) : (
-        <div className="flex flex-col gap-3">
-          {chats.map((chat) => (
-            <Link key={chat.id} to={`/chat/${chat.id}`}>
-              <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-lg flex-shrink-0">
+        <div className="flex flex-col gap-2">
+          {chats.map((chat) => {
+            const noLeido = tieneNoLeidos(chat.id);
+            return (
+              <Link key={chat.id} to={`/chat/${chat.id}`}>
+                <div className={`rounded-2xl border p-4 hover:shadow-md transition-all cursor-pointer ${
+                  noLeido ? "bg-green-50 border-green-200" : "bg-white border-gray-100"
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${
+                      chat.tipo === "busco" ? "bg-amber-100" : "bg-green-100"
+                    }`}>
                       {chat.tipo === "busco" ? "🔍" : "🏪"}
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">
-                        {chat.tipo === "busco" ? "Busco" : "Vendo"}
-                      </p>
-                      <p className="text-sm text-gray-700 truncate">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                          {chat.tipo === "busco" ? "Busco" : "Vendo"}
+                        </p>
+                        <span className="text-xs text-gray-400 flex-shrink-0">{tiempoRelativo(chat.updatedAt)}</span>
+                      </div>
+                      <p className={`text-sm truncate mt-0.5 ${noLeido ? "font-semibold text-gray-900" : "text-gray-600"}`}>
                         {chat.lastMessage ?? "Sin mensajes aún"}
                       </p>
                     </div>
+                    {noLeido && (
+                      <div className="w-2.5 h-2.5 bg-green-500 rounded-full flex-shrink-0" />
+                    )}
                   </div>
-                  <svg className="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
                 </div>
-              </Card>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

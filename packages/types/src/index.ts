@@ -99,6 +99,7 @@ export interface Chat {
   tipo: "vendo" | "busco";
   updatedAt: number;
   lastMessage?: string;
+  lastSenderId?: string;
   pedidoId?: string;
 }
 

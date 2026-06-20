@@ -1,11 +1,13 @@
 import React from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@mercadovivo/hooks";
+import { useChats } from "@mercadovivo/hooks";
 import { logout } from "@mercadovivo/firebase";
 import { APP_NAME } from "@mercadovivo/config";
 
 export default function Navbar() {
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, usuario } = useAuth();
+  const { unreadCount } = useChats(usuario?.id);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -34,7 +36,18 @@ export default function Navbar() {
               <>
                 <NavLink to="/publicar" className={linkClass}>Publicar</NavLink>
                 <NavLink to="/mis-publicaciones" className={linkClass}>Mis publicaciones</NavLink>
-                <NavLink to="/chats" className={linkClass}>Chats</NavLink>
+                <NavLink to="/chats" className={({ isActive }) =>
+                  `relative px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive ? "bg-green-100 text-green-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`
+                }>
+                  Chats
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </NavLink>
               </>
             )}
           </div>
