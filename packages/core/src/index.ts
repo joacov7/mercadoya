@@ -5,3 +5,4 @@ export * from "./chats";
 export * from "./envios";
 export * from "./pedidos";
 export * from "./calificaciones";
+export * from "./tienda";

@@ -40,6 +40,7 @@ export interface PublicacionVendo {
   stockDisponible: boolean;
   envioDisponible: boolean;
   activo: boolean;
+  enTienda: boolean;
   createdAt: number;
 }
 
@@ -110,6 +111,45 @@ export interface Mensaje {
   remitenteId: string;
   texto: string;
   createdAt: number;
+}
+
+export type MetodoPago = "efectivo" | "transferencia" | "debito" | "tarjeta";
+export type MetodoEnvio = "retiro" | "delivery";
+export type EstadoPedidoTienda = "pendiente" | "pago" | "cancelado";
+
+export interface ConfigTienda {
+  comercioId: string;
+  activo: boolean;
+  urlBase: string;
+  metodosPago: MetodoPago[];
+  metodosEnvio: MetodoEnvio[];
+  costoDelivery: number;
+  zonaDelivery: string;
+  updatedAt: number;
+}
+
+export interface ItemCarrito {
+  publicacionId: string;
+  titulo: string;
+  precio: number;
+  cantidad: number;
+  imagenUrl?: string;
+}
+
+export interface PedidoTienda {
+  id: string;
+  comercioId: string;
+  clienteId: string;
+  items: ItemCarrito[];
+  metodoPago: MetodoPago;
+  metodoEnvio: MetodoEnvio;
+  direccionEntrega?: string;
+  subtotal: number;
+  costoEnvio: number;
+  total: number;
+  estado: EstadoPedidoTienda;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface SolicitudEnvio {

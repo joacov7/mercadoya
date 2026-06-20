@@ -77,6 +77,10 @@ export async function desactivarVendo(id: string): Promise<void> {
   await updateDoc(doc(getDb(), COLECCIONES.VENDO, id), { activo: false });
 }
 
+export async function actualizarVendo(id: string, data: Partial<PublicacionVendo>): Promise<void> {
+  await updateDoc(doc(getDb(), COLECCIONES.VENDO, id), data as Record<string, unknown>);
+}
+
 export async function listarMisPublicacionesVendo(
   usuarioId: string
 ): Promise<PublicacionVendo[]> {
@@ -84,6 +88,17 @@ export async function listarMisPublicacionesVendo(
     collection(getDb(), COLECCIONES.VENDO),
     where("comercioId", "==", usuarioId),
     orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as PublicacionVendo);
+}
+
+export async function listarProductosTienda(comercioId: string): Promise<PublicacionVendo[]> {
+  const q = query(
+    collection(getDb(), COLECCIONES.VENDO),
+    where("comercioId", "==", comercioId),
+    where("enTienda", "==", true),
+    where("activo", "==", true)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as PublicacionVendo);

@@ -18,6 +18,11 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import PerfilPage from "./pages/PerfilPage";
 import PerfilComercio from "./pages/PerfilComercio";
+import TiendaPage from "./pages/TiendaPage";
+import CheckoutPage from "./pages/CheckoutPage";
+import PedidoTiendaPage from "./pages/PedidoTiendaPage";
+import AdminTiendaPage from "./pages/AdminTiendaPage";
+import { CarritoProvider } from "./context/CarritoContext";
 import { Spinner } from "@mercadovivo/ui";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -34,25 +39,32 @@ function RootRoute() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<RootRoute />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route element={<Layout />}>
-        <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
-        <Route path="/vendo" element={<FeedVendo />} />
-        <Route path="/vendo/:id" element={<DetalleVendo />} />
-        <Route path="/busco" element={<FeedBusco />} />
-        <Route path="/busco/:id" element={<DetalleBusco />} />
-        <Route path="/comercio/:id" element={<PerfilComercio />} />
-        <Route path="/publicar" element={<PrivateRoute><PublicarElegir /></PrivateRoute>} />
-        <Route path="/publicar/vendo" element={<PrivateRoute><PublicarVendo /></PrivateRoute>} />
-        <Route path="/publicar/busco" element={<PrivateRoute><PublicarBusco /></PrivateRoute>} />
-        <Route path="/mis-publicaciones" element={<PrivateRoute><MisPublicaciones /></PrivateRoute>} />
-        <Route path="/chats" element={<PrivateRoute><ChatsPage /></PrivateRoute>} />
-        <Route path="/chat/:chatId" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
-        <Route path="/perfil" element={<PrivateRoute><PerfilPage /></PrivateRoute>} />
-      </Route>
-    </Routes>
+    <CarritoProvider>
+      <Routes>
+        <Route path="/" element={<RootRoute />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        {/* Tienda — sin Layout para experiencia limpia en celu */}
+        <Route path="/tienda/:comercioId" element={<PrivateRoute><TiendaPage /></PrivateRoute>} />
+        <Route path="/checkout" element={<PrivateRoute><CheckoutPage /></PrivateRoute>} />
+        <Route path="/pedido-tienda/:pedidoId" element={<PrivateRoute><PedidoTiendaPage /></PrivateRoute>} />
+        <Route element={<Layout />}>
+          <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
+          <Route path="/vendo" element={<FeedVendo />} />
+          <Route path="/vendo/:id" element={<DetalleVendo />} />
+          <Route path="/busco" element={<FeedBusco />} />
+          <Route path="/busco/:id" element={<DetalleBusco />} />
+          <Route path="/comercio/:id" element={<PerfilComercio />} />
+          <Route path="/publicar" element={<PrivateRoute><PublicarElegir /></PrivateRoute>} />
+          <Route path="/publicar/vendo" element={<PrivateRoute><PublicarVendo /></PrivateRoute>} />
+          <Route path="/publicar/busco" element={<PrivateRoute><PublicarBusco /></PrivateRoute>} />
+          <Route path="/mis-publicaciones" element={<PrivateRoute><MisPublicaciones /></PrivateRoute>} />
+          <Route path="/chats" element={<PrivateRoute><ChatsPage /></PrivateRoute>} />
+          <Route path="/chat/:chatId" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
+          <Route path="/perfil" element={<PrivateRoute><PerfilPage /></PrivateRoute>} />
+          <Route path="/admin/tienda" element={<PrivateRoute><AdminTiendaPage /></PrivateRoute>} />
+        </Route>
+      </Routes>
+    </CarritoProvider>
   );
 }
