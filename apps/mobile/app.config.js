@@ -1,23 +1,17 @@
-const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
-// Lee .env del root del monorepo si existe
 function loadEnv() {
-  const envPath = path.resolve(__dirname, "../../.env");
-  const envLocal = path.resolve(__dirname, "../../.env.local");
   const env = {};
-
-  for (const p of [envPath, envLocal]) {
-    if (fs.existsSync(p)) {
-      fs.readFileSync(p, "utf-8")
-        .split("\n")
-        .forEach((line) => {
-          const [key, ...val] = line.split("=");
-          if (key && key.startsWith("VITE_")) {
-            env[key.trim()] = val.join("=").trim().replace(/^["']|["']$/g, "");
-          }
-        });
+  for (const p of ["../../.env", "../../.env.local"]) {
+    const full = path.resolve(__dirname, p);
+    if (fs.existsSync(full)) {
+      fs.readFileSync(full, "utf-8").split("\n").forEach((line) => {
+        const [key, ...val] = line.split("=");
+        if (key?.trim().startsWith("VITE_")) {
+          env[key.trim()] = val.join("=").trim().replace(/^["']|["']$/g, "");
+        }
+      });
     }
   }
   return env;
@@ -33,18 +27,11 @@ module.exports = {
     scheme: "mercadovivo",
     orientation: "portrait",
     userInterfaceStyle: "light",
-    splash: {
-      resizeMode: "contain",
-      backgroundColor: "#16A34A",
-    },
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.mercadovivo.app",
     },
     android: {
-      adaptiveIcon: {
-        backgroundColor: "#16A34A",
-      },
       package: "com.mercadovivo.app",
     },
     plugins: ["expo-router"],
