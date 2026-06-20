@@ -12,6 +12,7 @@ import ChatPage from "./pages/ChatPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import PerfilPage from "./pages/PerfilPage";
+import ChatsPage from "./pages/ChatsPage";
 import { Spinner } from "@mercadovivo/ui";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/busco" element={<FeedBusco />} />
         <Route path="/busco/:id" element={<DetalleBusco />} />
         <Route path="/publicar" element={<PrivateRoute><PublicarRoute /></PrivateRoute>} />
+        <Route path="/chats" element={<PrivateRoute><ChatsPage /></PrivateRoute>} />
         <Route path="/chat/:chatId" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
         <Route path="/perfil" element={<PrivateRoute><PerfilPage /></PrivateRoute>} />
       </Route>

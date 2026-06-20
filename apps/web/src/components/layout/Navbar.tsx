@@ -31,6 +31,7 @@ export default function Navbar() {
             <NavLink to="/vendo" className={linkClass}>Vendo</NavLink>
             <NavLink to="/busco" className={linkClass}>Busco</NavLink>
             {firebaseUser && <NavLink to="/publicar" className={linkClass}>Publicar</NavLink>}
+            {firebaseUser && <NavLink to="/chats" className={linkClass}>Chats</NavLink>}
           </div>
 
           <div className="flex items-center gap-3">
