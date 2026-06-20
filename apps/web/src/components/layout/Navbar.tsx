@@ -30,8 +30,13 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-1">
             <NavLink to="/vendo" className={linkClass}>Vendo</NavLink>
             <NavLink to="/busco" className={linkClass}>Busco</NavLink>
-            {firebaseUser && <NavLink to="/publicar" className={linkClass}>Publicar</NavLink>}
-            {firebaseUser && <NavLink to="/chats" className={linkClass}>Chats</NavLink>}
+            {firebaseUser && (
+              <>
+                <NavLink to="/publicar" className={linkClass}>Publicar</NavLink>
+                <NavLink to="/mis-publicaciones" className={linkClass}>Mis publicaciones</NavLink>
+                <NavLink to="/chats" className={linkClass}>Chats</NavLink>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

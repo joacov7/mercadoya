@@ -13,6 +13,7 @@ export default function PublicarVendo() {
   const [rubro, setRubro] = useState<Rubro | "">("");
   const [precio, setPrecio] = useState("");
   const [stock, setStock] = useState("");
+  const [envioDisponible, setEnvioDisponible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -31,9 +32,10 @@ export default function PublicarVendo() {
         stock: Number(stock),
         imagenes: [],
         stockDisponible: Number(stock) > 0,
+        envioDisponible,
         activo: true,
       });
-      navigate("/vendo");
+      navigate("/mis-publicaciones");
     } catch {
       setError("Hubo un error. Intentá de nuevo.");
     } finally {
@@ -89,6 +91,23 @@ export default function PublicarVendo() {
             min="0"
           />
         </div>
+        <label className="flex items-center gap-3 cursor-pointer select-none">
+          <div
+            onClick={() => setEnvioDisponible(!envioDisponible)}
+            className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 relative ${
+              envioDisponible ? "bg-green-500" : "bg-gray-300"
+            }`}
+          >
+            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+              envioDisponible ? "translate-x-6" : "translate-x-1"
+            }`} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-700">Ofrezco envío con cadete</p>
+            <p className="text-xs text-gray-400">Los compradores podrán solicitar envío a domicilio</p>
+          </div>
+        </label>
+
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <Button type="submit" loading={loading} size="lg" className="w-full">
           Publicar producto

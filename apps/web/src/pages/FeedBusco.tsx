@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { usePublicacionesBusco } from "@mercadovivo/hooks";
 import { useAuth } from "@mercadovivo/hooks";
 import { type Rubro } from "@mercadovivo/config";
 import { Spinner, EmptyState, Button, Card, Badge } from "@mercadovivo/ui";
 import { FiltroRubros } from "../components/feed/FiltroRubros";
+import { Buscador } from "../components/feed/Buscador";
 import { crearOferta } from "@mercadovivo/core";
 import type { PublicacionBusco } from "@mercadovivo/types";
 
@@ -59,7 +60,6 @@ function ModalOferta({ publicacion, onClose, onEnviada }: ModalOfertaProps) {
           <p className="text-gray-500 text-sm mb-5">
             Solicitud: <span className="font-medium text-gray-700">"{publicacion.titulo}"</span>
           </p>
-
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Tu propuesta</label>
@@ -72,7 +72,6 @@ function ModalOferta({ publicacion, onClose, onEnviada }: ModalOfertaProps) {
                 className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
               />
             </div>
-
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Precio ($)</label>
               <input
@@ -85,16 +84,10 @@ function ModalOferta({ publicacion, onClose, onEnviada }: ModalOfertaProps) {
                 className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
-
             {error && <p className="text-red-500 text-sm">{error}</p>}
-
             <div className="flex gap-3 mt-1">
-              <Button type="submit" loading={loading} className="flex-1">
-                Enviar oferta
-              </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
+              <Button type="submit" loading={loading} className="flex-1">Enviar oferta</Button>
+              <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
             </div>
           </form>
         </div>
@@ -105,12 +98,22 @@ function ModalOferta({ publicacion, onClose, onEnviada }: ModalOfertaProps) {
 
 export default function FeedBusco() {
   const [rubroFiltro, setRubroFiltro] = useState<Rubro | undefined>();
+  const [busqueda, setBusqueda] = useState("");
   const { publicaciones, loading } = usePublicacionesBusco(rubroFiltro);
   const { usuario } = useAuth();
   const navigate = useNavigate();
-  const esComercio = usuario?.rol === "comercio";
   const [modalPub, setModalPub] = useState<PublicacionBusco | null>(null);
-  const [enviado, setEnviado] = useState<string | null>(null);
+  const [enviados, setEnviados] = useState<Set<string>>(new Set());
+
+  const filtradas = useMemo(() =>
+    publicaciones
+      .filter((p) => usuario?.id !== p.clienteId)
+      .filter((p) =>
+        p.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
+        p.descripcion.toLowerCase().includes(busqueda.toLowerCase())
+      ),
+    [publicaciones, busqueda, usuario]
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -124,11 +127,12 @@ export default function FeedBusco() {
         </Link>
       </div>
 
+      <Buscador value={busqueda} onChange={setBusqueda} placeholder="Buscar solicitudes..." />
       <FiltroRubros selected={rubroFiltro} onChange={setRubroFiltro} />
 
       {loading && <div className="py-12"><Spinner /></div>}
 
-      {!loading && publicaciones.length === 0 && (
+      {!loading && filtradas.length === 0 && (
         <EmptyState
           title="No hay solicitudes activas"
           description="Sé el primero en publicar lo que buscás"
@@ -138,7 +142,7 @@ export default function FeedBusco() {
       )}
 
       <div className="flex flex-col gap-3">
-        {publicaciones.map((p) => (
+        {filtradas.map((p) => (
           <Card key={p.id} onClick={() => navigate(`/busco/${p.id}`)}>
             <div className="p-4">
               <div className="flex items-start justify-between gap-2 mb-2">
@@ -153,22 +157,14 @@ export default function FeedBusco() {
               )}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">{tiempoRelativo(p.createdAt)}</span>
-                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                  {esComercio && (
-                    <Button
-                      size="sm"
-                      onClick={() => setModalPub(p)}
-                    >
+                <div onClick={(e) => e.stopPropagation()}>
+                  {usuario && !enviados.has(p.id) && (
+                    <Button size="sm" onClick={() => setModalPub(p)}>
                       Hacer oferta
                     </Button>
                   )}
-                  {enviado === p.id && (
-                    <span className="text-xs text-green-600 font-medium self-center">✓ Oferta enviada</span>
-                  )}
-                  {!esComercio && usuario?.id === p.clienteId && (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-                      Tu publicación
-                    </span>
+                  {enviados.has(p.id) && (
+                    <span className="text-xs text-green-600 font-medium">✓ Oferta enviada</span>
                   )}
                 </div>
               </div>
@@ -181,7 +177,7 @@ export default function FeedBusco() {
         <ModalOferta
           publicacion={modalPub}
           onClose={() => setModalPub(null)}
-          onEnviada={() => setEnviado(modalPub.id)}
+          onEnviada={() => setEnviados((prev) => new Set([...prev, modalPub!.id]))}
         />
       )}
     </div>

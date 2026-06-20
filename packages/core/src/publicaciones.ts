@@ -72,3 +72,31 @@ export async function listarBusco(
 export async function cerrarBusco(id: string): Promise<void> {
   await updateDoc(doc(db, COLECCIONES.BUSCO, id), { estado: "cerrado" });
 }
+
+export async function desactivarVendo(id: string): Promise<void> {
+  await updateDoc(doc(db, COLECCIONES.VENDO, id), { activo: false });
+}
+
+export async function listarMisPublicacionesVendo(
+  usuarioId: string
+): Promise<PublicacionVendo[]> {
+  const q = query(
+    collection(db, COLECCIONES.VENDO),
+    where("comercioId", "==", usuarioId),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as PublicacionVendo);
+}
+
+export async function listarMisPublicacionesBusco(
+  usuarioId: string
+): Promise<PublicacionBusco[]> {
+  const q = query(
+    collection(db, COLECCIONES.BUSCO),
+    where("clienteId", "==", usuarioId),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as PublicacionBusco);
+}

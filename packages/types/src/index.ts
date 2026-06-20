@@ -37,6 +37,7 @@ export interface PublicacionVendo {
   stock: number;
   imagenes: string[];
   stockDisponible: boolean;
+  envioDisponible: boolean;
   activo: boolean;
   createdAt: number;
 }
