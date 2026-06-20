@@ -1,3 +1,4 @@
+import "../global.css";
 import { Stack } from "expo-router";
 import Constants from "expo-constants";
 import { initFirebase } from "@mercadovivo/firebase";
