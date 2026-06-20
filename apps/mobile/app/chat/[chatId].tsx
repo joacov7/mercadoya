@@ -9,7 +9,7 @@ import {
   crearPedido, actualizarEstadoPedido, suscribirPedido,
   calificarPedido, yaCalificó,
 } from "@mercadovivo/core";
-import { db, COLECCIONES, doc, getDoc } from "@mercadovivo/firebase";
+import { getDb, COLECCIONES, doc, getDoc } from "@mercadovivo/firebase";
 import type { Chat, Pedido } from "@mercadovivo/types";
 
 const ESTADOS_LABEL: Record<string, string> = {
@@ -37,7 +37,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!chatId) return;
-    getDoc(doc(db, COLECCIONES.CHATS, chatId)).then((snap) => {
+    getDoc(doc(getDb(), COLECCIONES.CHATS, chatId)).then((snap) => {
       if (snap.exists()) setChat(snap.data() as Chat);
     });
   }, [chatId]);

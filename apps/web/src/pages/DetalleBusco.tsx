@@ -9,7 +9,7 @@ import {
   enviarMensaje,
   cerrarBusco,
 } from "@mercadovivo/core";
-import { db, COLECCIONES, doc, getDoc } from "@mercadovivo/firebase";
+import { getDb, COLECCIONES, doc, getDoc } from "@mercadovivo/firebase";
 import { Spinner, Button, Badge, Card } from "@mercadovivo/ui";
 import type { PublicacionBusco, OfertaComercio } from "@mercadovivo/types";
 
@@ -24,7 +24,7 @@ export default function DetalleBusco() {
 
   useEffect(() => {
     if (!id) return;
-    getDoc(doc(db, COLECCIONES.BUSCO, id)).then((snap) => {
+    getDoc(doc(getDb(), COLECCIONES.BUSCO, id)).then((snap) => {
       if (snap.exists()) setPublicacion(snap.data() as PublicacionBusco);
       setLoading(false);
     });

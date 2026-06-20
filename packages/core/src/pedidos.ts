@@ -1,5 +1,5 @@
 import {
-  db,
+  getDb,
   COLECCIONES,
   collection,
   addDoc,
@@ -18,7 +18,7 @@ const COL = "pedidos";
 export async function crearPedido(
   data: Omit<Pedido, "id" | "createdAt" | "updatedAt">
 ): Promise<string> {
-  const ref = await addDoc(collection(db, COL), {
+  const ref = await addDoc(collection(getDb(), COL), {
     ...data,
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -26,7 +26,7 @@ export async function crearPedido(
   await updateDoc(ref, { id: ref.id });
 
   // Actualizar chat con pedidoId
-  await updateDoc(doc(db, COLECCIONES.CHATS, data.chatId), {
+  await updateDoc(doc(getDb(), COLECCIONES.CHATS, data.chatId), {
     pedidoId: ref.id,
   });
 
@@ -34,7 +34,7 @@ export async function crearPedido(
 }
 
 export async function obtenerPedido(id: string): Promise<Pedido | null> {
-  const snap = await getDoc(doc(db, COL, id));
+  const snap = await getDoc(doc(getDb(), COL, id));
   return snap.exists() ? (snap.data() as Pedido) : null;
 }
 
@@ -43,7 +43,7 @@ export async function actualizarEstadoPedido(
   estado: EstadoPedido,
   extra?: Partial<Pedido>
 ): Promise<void> {
-  await updateDoc(doc(db, COL, id), {
+  await updateDoc(doc(getDb(), COL, id), {
     estado,
     updatedAt: Date.now(),
     ...(extra ?? {}),
@@ -53,7 +53,7 @@ export async function actualizarEstadoPedido(
   if (estado === "entregado") {
     const pedido = await obtenerPedido(id);
     if (pedido?.publicacionId) {
-      const pubRef = doc(db, COLECCIONES.VENDO, pedido.publicacionId);
+      const pubRef = doc(getDb(), COLECCIONES.VENDO, pedido.publicacionId);
       const pubSnap = await getDoc(pubRef);
       if (pubSnap.exists()) {
         const stock = (pubSnap.data().stock ?? 1) - 1;
@@ -71,14 +71,14 @@ export function suscribirPedido(
   pedidoId: string,
   cb: (pedido: Pedido | null) => void
 ): () => void {
-  return onSnapshot(doc(db, COL, pedidoId), (snap) => {
+  return onSnapshot(doc(getDb(), COL, pedidoId), (snap) => {
     cb(snap.exists() ? (snap.data() as Pedido) : null);
   });
 }
 
 export async function listarPedidosUsuario(userId: string): Promise<Pedido[]> {
-  const asCliente = query(collection(db, COL), where("clienteId", "==", userId));
-  const asComercio = query(collection(db, COL), where("comercioId", "==", userId));
+  const asCliente = query(collection(getDb(), COL), where("clienteId", "==", userId));
+  const asComercio = query(collection(getDb(), COL), where("comercioId", "==", userId));
   const [s1, s2] = await Promise.all([getDocs(asCliente), getDocs(asComercio)]);
   const todos = [
     ...s1.docs.map((d) => d.data() as Pedido),

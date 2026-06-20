@@ -1,5 +1,5 @@
 import {
-  db,
+  getDb,
   COLECCIONES,
   collection,
   addDoc,
@@ -14,7 +14,7 @@ import type { SolicitudEnvio } from "@mercadovivo/types";
 export async function solicitarEnvio(
   data: Omit<SolicitudEnvio, "id" | "createdAt" | "estado">
 ): Promise<string> {
-  const ref = await addDoc(collection(db, COLECCIONES.ENVIOS), {
+  const ref = await addDoc(collection(getDb(), COLECCIONES.ENVIOS), {
     ...data,
     estado: "pendiente",
     createdAt: Date.now(),
@@ -27,12 +27,12 @@ export async function actualizarEstadoEnvio(
   id: string,
   estado: SolicitudEnvio["estado"]
 ): Promise<void> {
-  await updateDoc(doc(db, COLECCIONES.ENVIOS, id), { estado });
+  await updateDoc(doc(getDb(), COLECCIONES.ENVIOS, id), { estado });
 }
 
 export async function listarEnviosCadete(cadeteId: string): Promise<SolicitudEnvio[]> {
   const q = query(
-    collection(db, COLECCIONES.ENVIOS),
+    collection(getDb(), COLECCIONES.ENVIOS),
     where("cadeteId", "==", cadeteId)
   );
   const snap = await getDocs(q);
@@ -41,7 +41,7 @@ export async function listarEnviosCadete(cadeteId: string): Promise<SolicitudEnv
 
 export async function listarEnviosPendientes(): Promise<SolicitudEnvio[]> {
   const q = query(
-    collection(db, COLECCIONES.ENVIOS),
+    collection(getDb(), COLECCIONES.ENVIOS),
     where("estado", "==", "pendiente")
   );
   const snap = await getDocs(q);

@@ -1,5 +1,5 @@
 import {
-  db,
+  getDb,
   COLECCIONES,
   collection,
   addDoc,
@@ -21,7 +21,7 @@ import type {
 export async function publicarVendo(
   data: Omit<PublicacionVendo, "id" | "createdAt">
 ): Promise<string> {
-  const ref = await addDoc(collection(db, COLECCIONES.VENDO), {
+  const ref = await addDoc(collection(getDb(), COLECCIONES.VENDO), {
     ...data,
     createdAt: Date.now(),
   });
@@ -37,7 +37,7 @@ export async function listarVendo(
     orderBy("createdAt", "desc"),
   ];
   if (rubro) constraints.unshift(where("rubro", "==", rubro));
-  const q = query(collection(db, COLECCIONES.VENDO), ...constraints);
+  const q = query(collection(getDb(), COLECCIONES.VENDO), ...constraints);
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as PublicacionVendo);
 }
@@ -47,7 +47,7 @@ export async function listarVendo(
 export async function publicarBusco(
   data: Omit<PublicacionBusco, "id" | "createdAt">
 ): Promise<string> {
-  const ref = await addDoc(collection(db, COLECCIONES.BUSCO), {
+  const ref = await addDoc(collection(getDb(), COLECCIONES.BUSCO), {
     ...data,
     estado: "abierto",
     createdAt: Date.now(),
@@ -64,24 +64,24 @@ export async function listarBusco(
     orderBy("createdAt", "desc"),
   ];
   if (rubro) constraints.unshift(where("rubro", "==", rubro));
-  const q = query(collection(db, COLECCIONES.BUSCO), ...constraints);
+  const q = query(collection(getDb(), COLECCIONES.BUSCO), ...constraints);
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as PublicacionBusco);
 }
 
 export async function cerrarBusco(id: string): Promise<void> {
-  await updateDoc(doc(db, COLECCIONES.BUSCO, id), { estado: "cerrado" });
+  await updateDoc(doc(getDb(), COLECCIONES.BUSCO, id), { estado: "cerrado" });
 }
 
 export async function desactivarVendo(id: string): Promise<void> {
-  await updateDoc(doc(db, COLECCIONES.VENDO, id), { activo: false });
+  await updateDoc(doc(getDb(), COLECCIONES.VENDO, id), { activo: false });
 }
 
 export async function listarMisPublicacionesVendo(
   usuarioId: string
 ): Promise<PublicacionVendo[]> {
   const q = query(
-    collection(db, COLECCIONES.VENDO),
+    collection(getDb(), COLECCIONES.VENDO),
     where("comercioId", "==", usuarioId),
     orderBy("createdAt", "desc")
   );
@@ -93,7 +93,7 @@ export async function listarMisPublicacionesBusco(
   usuarioId: string
 ): Promise<PublicacionBusco[]> {
   const q = query(
-    collection(db, COLECCIONES.BUSCO),
+    collection(getDb(), COLECCIONES.BUSCO),
     where("clienteId", "==", usuarioId),
     orderBy("createdAt", "desc")
   );

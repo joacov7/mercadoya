@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@mercadovivo/hooks";
 import { crearChat, enviarMensaje, obtenerUsuario } from "@mercadovivo/core";
-import { db, COLECCIONES, doc, getDoc } from "@mercadovivo/firebase";
+import { getDb, COLECCIONES, doc, getDoc } from "@mercadovivo/firebase";
 import type { PublicacionVendo, Usuario } from "@mercadovivo/types";
 import { Spinner, Button, Badge } from "@mercadovivo/ui";
 
@@ -18,7 +18,7 @@ export default function DetalleVendo() {
 
   useEffect(() => {
     if (!id) return;
-    getDoc(doc(db, COLECCIONES.VENDO, id)).then(async (snap) => {
+    getDoc(doc(getDb(), COLECCIONES.VENDO, id)).then(async (snap) => {
       if (!snap.exists()) { setLoading(false); return; }
       const data = snap.data() as PublicacionVendo;
       setPub(data);

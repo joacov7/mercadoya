@@ -6,17 +6,15 @@ import {
   onAuthStateChanged,
   type User,
 } from "firebase/auth";
-import { firebaseApp } from "./app";
-
-export const auth = getAuth(firebaseApp);
+import { getFirebaseApp } from "./app";
 
 export const loginEmail = (email: string, password: string) =>
-  signInWithEmailAndPassword(auth, email, password);
+  signInWithEmailAndPassword(getAuth(getFirebaseApp()), email, password);
 
 export const registerEmail = (email: string, password: string) =>
-  createUserWithEmailAndPassword(auth, email, password);
+  createUserWithEmailAndPassword(getAuth(getFirebaseApp()), email, password);
 
-export const logout = () => signOut(auth);
+export const logout = () => signOut(getAuth(getFirebaseApp()));
 
 export const onAuth = (cb: (user: User | null) => void) =>
-  onAuthStateChanged(auth, cb);
+  onAuthStateChanged(getAuth(getFirebaseApp()), cb);

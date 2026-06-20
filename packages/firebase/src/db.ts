@@ -15,9 +15,11 @@ import {
   serverTimestamp,
   type QueryConstraint,
 } from "firebase/firestore";
-import { firebaseApp } from "./app";
+import { getFirebaseApp } from "./app";
 
-export const db = getFirestore(firebaseApp);
+export function getDb() {
+  return getFirestore(getFirebaseApp());
+}
 
 export const COLECCIONES = {
   USUARIOS: "usuarios",

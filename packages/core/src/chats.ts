@@ -1,5 +1,5 @@
 import {
-  db,
+  getDb,
   COLECCIONES,
   collection,
   addDoc,
@@ -16,7 +16,7 @@ import type { Chat, Mensaje } from "@mercadovivo/types";
 export async function crearChat(
   data: Omit<Chat, "id" | "updatedAt" | "lastMessage">
 ): Promise<string> {
-  const ref = await addDoc(collection(db, COLECCIONES.CHATS), {
+  const ref = await addDoc(collection(getDb(), COLECCIONES.CHATS), {
     ...data,
     updatedAt: Date.now(),
   });
@@ -26,12 +26,12 @@ export async function crearChat(
 
 export async function listarChatsUsuario(userId: string): Promise<Chat[]> {
   const asCliente = query(
-    collection(db, COLECCIONES.CHATS),
+    collection(getDb(), COLECCIONES.CHATS),
     where("clienteId", "==", userId),
     orderBy("updatedAt", "desc")
   );
   const asComercio = query(
-    collection(db, COLECCIONES.CHATS),
+    collection(getDb(), COLECCIONES.CHATS),
     where("comercioId", "==", userId),
     orderBy("updatedAt", "desc")
   );
@@ -48,14 +48,14 @@ export async function enviarMensaje(
   remitenteId: string,
   texto: string
 ): Promise<void> {
-  const ref = await addDoc(collection(db, COLECCIONES.MENSAJES), {
+  const ref = await addDoc(collection(getDb(), COLECCIONES.MENSAJES), {
     chatId,
     remitenteId,
     texto,
     createdAt: Date.now(),
   });
   await updateDoc(ref, { id: ref.id });
-  await updateDoc(doc(db, COLECCIONES.CHATS, chatId), {
+  await updateDoc(doc(getDb(), COLECCIONES.CHATS, chatId), {
     updatedAt: Date.now(),
     lastMessage: texto,
     lastSenderId: remitenteId,
@@ -67,12 +67,12 @@ export function suscribirChatsUsuario(
   cb: (chats: Chat[]) => void
 ): () => void {
   const q1 = query(
-    collection(db, COLECCIONES.CHATS),
+    collection(getDb(), COLECCIONES.CHATS),
     where("clienteId", "==", userId),
     orderBy("updatedAt", "desc")
   );
   const q2 = query(
-    collection(db, COLECCIONES.CHATS),
+    collection(getDb(), COLECCIONES.CHATS),
     where("comercioId", "==", userId),
     orderBy("updatedAt", "desc")
   );
@@ -93,7 +93,7 @@ export function suscribirMensajes(
   cb: (mensajes: Mensaje[]) => void
 ): () => void {
   const q = query(
-    collection(db, COLECCIONES.MENSAJES),
+    collection(getDb(), COLECCIONES.MENSAJES),
     where("chatId", "==", chatId),
     orderBy("createdAt", "asc")
   );

@@ -1,5 +1,5 @@
 import {
-  db,
+  getDb,
   COLECCIONES,
   collection,
   addDoc,
@@ -15,7 +15,7 @@ import type { OfertaComercio } from "@mercadovivo/types";
 export async function crearOferta(
   data: Omit<OfertaComercio, "id" | "createdAt" | "estado">
 ): Promise<string> {
-  const ref = await addDoc(collection(db, COLECCIONES.OFERTAS), {
+  const ref = await addDoc(collection(getDb(), COLECCIONES.OFERTAS), {
     ...data,
     estado: "pendiente",
     createdAt: Date.now(),
@@ -25,18 +25,18 @@ export async function crearOferta(
 }
 
 export async function aceptarOferta(ofertaId: string): Promise<void> {
-  await updateDoc(doc(db, COLECCIONES.OFERTAS, ofertaId), { estado: "aceptada" });
+  await updateDoc(doc(getDb(), COLECCIONES.OFERTAS, ofertaId), { estado: "aceptada" });
 }
 
 export async function rechazarOferta(ofertaId: string): Promise<void> {
-  await updateDoc(doc(db, COLECCIONES.OFERTAS, ofertaId), { estado: "rechazada" });
+  await updateDoc(doc(getDb(), COLECCIONES.OFERTAS, ofertaId), { estado: "rechazada" });
 }
 
 export async function listarOfertasPorBusco(
   publicacionBuscoId: string
 ): Promise<OfertaComercio[]> {
   const q = query(
-    collection(db, COLECCIONES.OFERTAS),
+    collection(getDb(), COLECCIONES.OFERTAS),
     where("publicacionBuscoId", "==", publicacionBuscoId)
   );
   const snap = await getDocs(q);
@@ -48,7 +48,7 @@ export function suscribirOfertasPorBusco(
   cb: (ofertas: OfertaComercio[]) => void
 ): () => void {
   const q = query(
-    collection(db, COLECCIONES.OFERTAS),
+    collection(getDb(), COLECCIONES.OFERTAS),
     where("publicacionBuscoId", "==", publicacionBuscoId)
   );
   return onSnapshot(q, (snap) => {
