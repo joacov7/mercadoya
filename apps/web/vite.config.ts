@@ -1,8 +1,10 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "VITE_");
+  // Load env from monorepo root, not apps/web
+  const env = loadEnv(mode, path.resolve(__dirname, "../.."), "VITE_");
 
   return {
     plugins: [react()],
