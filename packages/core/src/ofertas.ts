@@ -4,21 +4,32 @@ import {
   collection,
   addDoc,
   updateDoc,
+  doc,
   query,
   where,
   getDocs,
+  onSnapshot,
 } from "@mercadovivo/firebase";
 import type { OfertaComercio } from "@mercadovivo/types";
 
 export async function crearOferta(
-  data: Omit<OfertaComercio, "id" | "createdAt">
+  data: Omit<OfertaComercio, "id" | "createdAt" | "estado">
 ): Promise<string> {
   const ref = await addDoc(collection(db, COLECCIONES.OFERTAS), {
     ...data,
+    estado: "pendiente",
     createdAt: Date.now(),
   });
   await updateDoc(ref, { id: ref.id });
   return ref.id;
+}
+
+export async function aceptarOferta(ofertaId: string): Promise<void> {
+  await updateDoc(doc(db, COLECCIONES.OFERTAS, ofertaId), { estado: "aceptada" });
+}
+
+export async function rechazarOferta(ofertaId: string): Promise<void> {
+  await updateDoc(doc(db, COLECCIONES.OFERTAS, ofertaId), { estado: "rechazada" });
 }
 
 export async function listarOfertasPorBusco(
@@ -30,4 +41,17 @@ export async function listarOfertasPorBusco(
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as OfertaComercio);
+}
+
+export function suscribirOfertasPorBusco(
+  publicacionBuscoId: string,
+  cb: (ofertas: OfertaComercio[]) => void
+): () => void {
+  const q = query(
+    collection(db, COLECCIONES.OFERTAS),
+    where("publicacionBuscoId", "==", publicacionBuscoId)
+  );
+  return onSnapshot(q, (snap) => {
+    cb(snap.docs.map((d) => d.data() as OfertaComercio));
+  });
 }
