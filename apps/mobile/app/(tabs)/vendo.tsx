@@ -1,11 +1,10 @@
 import React, { useState, useMemo } from "react";
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  Image, ScrollView, ActivityIndicator, Modal,
+  Image, ScrollView, ActivityIndicator, Modal, StyleSheet,
 } from "react-native";
 import { router } from "expo-router";
-import { usePublicacionesVendo } from "@mercadovivo/hooks";
-import { useAuth } from "@mercadovivo/hooks";
+import { usePublicacionesVendo, useAuth } from "@mercadovivo/hooks";
 import { crearChat, enviarMensaje } from "@mercadovivo/core";
 import { RUBROS, type Rubro } from "@mercadovivo/config";
 import type { PublicacionVendo } from "@mercadovivo/types";
@@ -18,12 +17,7 @@ function ModalMeInteresa({ pub, onClose }: { pub: PublicacionVendo; onClose: () 
     if (!usuario) { router.push("/login"); return; }
     setLoading(true);
     try {
-      const chatId = await crearChat({
-        clienteId: usuario.id,
-        comercioId: pub.comercioId,
-        publicacionRelacionada: pub.id,
-        tipo: "vendo",
-      });
+      const chatId = await crearChat({ clienteId: usuario.id, comercioId: pub.comercioId, publicacionRelacionada: pub.id, tipo: "vendo" });
       const texto = modalidad === "retiro"
         ? `Hola! Me interesa "${pub.titulo}" — $${pub.precio.toLocaleString("es-AR")}. Paso a retirarlo en el local.`
         : `Hola! Me interesa "${pub.titulo}" — $${pub.precio.toLocaleString("es-AR")}. Necesito envío con cadete.`;
@@ -37,41 +31,30 @@ function ModalMeInteresa({ pub, onClose }: { pub: PublicacionVendo; onClose: () 
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <TouchableOpacity className="flex-1 bg-black/50" activeOpacity={1} onPress={onClose}>
-        <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl">
+      <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={onClose}>
+        <View style={s.sheet}>
           {pub.imagenes?.[0] ? (
-            <Image source={{ uri: pub.imagenes[0] }} style={{ width: "100%", height: 200 }} resizeMode="cover"
-              className="rounded-t-3xl" />
+            <Image source={{ uri: pub.imagenes[0] }} style={s.sheetImg} resizeMode="cover" />
           ) : (
-            <View className="h-32 bg-green-50 rounded-t-3xl items-center justify-center">
+            <View style={[s.sheetImg, s.sheetImgEmpty]}>
               <Text style={{ fontSize: 48 }}>🛍️</Text>
             </View>
           )}
-          <View className="p-6">
-            <Text className="font-bold text-gray-900 text-xl">{pub.titulo}</Text>
-            <Text className="text-green-700 font-bold text-2xl mt-1">${pub.precio.toLocaleString("es-AR")}</Text>
-            {pub.envioDisponible && (
-              <Text className="text-sm text-blue-600 mt-1">🛵 Con envío disponible</Text>
-            )}
-            <Text className="text-sm font-semibold text-gray-700 mt-5 mb-3 text-center">¿Cómo querés recibirlo?</Text>
-            <TouchableOpacity
-              className={`py-4 rounded-2xl items-center mb-3 ${loading ? "bg-green-300" : "bg-green-600"}`}
-              onPress={() => handleElegir("retiro")}
-              disabled={loading}
-            >
-              <Text className="text-white font-bold text-base">🏪 Retiro en local</Text>
+          <View style={s.sheetBody}>
+            <Text style={s.sheetTitle}>{pub.titulo}</Text>
+            <Text style={s.sheetPrice}>${pub.precio.toLocaleString("es-AR")}</Text>
+            {pub.envioDisponible && <Text style={s.sheetEnvio}>🛵 Con envío disponible</Text>}
+            <Text style={s.sheetHow}>¿Cómo querés recibirlo?</Text>
+            <TouchableOpacity style={[s.sheetBtn, loading && s.btnDisabled]} onPress={() => handleElegir("retiro")} disabled={loading}>
+              <Text style={s.sheetBtnText}>🏪 Retiro en local</Text>
             </TouchableOpacity>
             {pub.envioDisponible && (
-              <TouchableOpacity
-                className="py-4 rounded-2xl items-center border-2 border-green-600 mb-3"
-                onPress={() => handleElegir("envio")}
-                disabled={loading}
-              >
-                <Text className="text-green-700 font-bold text-base">🛵 Quiero envío con cadete</Text>
+              <TouchableOpacity style={s.sheetBtnOutline} onPress={() => handleElegir("envio")} disabled={loading}>
+                <Text style={s.sheetBtnOutlineText}>🛵 Quiero envío con cadete</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity onPress={onClose} className="py-2 items-center">
-              <Text className="text-gray-400 text-sm">Cancelar</Text>
+            <TouchableOpacity onPress={onClose} style={s.cancelBtn}>
+              <Text style={s.cancelText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -80,61 +63,40 @@ function ModalMeInteresa({ pub, onClose }: { pub: PublicacionVendo; onClose: () 
   );
 }
 
-function CardVendo({ item, onMeInteresa, esMio }: {
-  item: PublicacionVendo;
-  onMeInteresa: () => void;
-  esMio: boolean;
-}) {
+function CardVendo({ item, onMeInteresa, esMio }: { item: PublicacionVendo; onMeInteresa: () => void; esMio: boolean }) {
   return (
-    <TouchableOpacity
-      className="bg-white rounded-2xl overflow-hidden mb-4 mx-4 shadow-sm border border-gray-100"
-      onPress={() => router.push(`/vendo/${item.id}` as any)}
-      activeOpacity={0.9}
-    >
-      <View className="relative">
+    <TouchableOpacity style={s.card} onPress={() => router.push(`/vendo/${item.id}` as any)} activeOpacity={0.9}>
+      <View>
         {item.imagenes?.[0] ? (
-          <Image source={{ uri: item.imagenes[0] }} style={{ width: "100%", height: 180 }} resizeMode="cover" />
+          <Image source={{ uri: item.imagenes[0] }} style={s.cardImg} resizeMode="cover" />
         ) : (
-          <View className="w-full bg-green-50 items-center justify-center" style={{ height: 180 }}>
+          <View style={[s.cardImg, s.cardImgEmpty]}>
             <Text style={{ fontSize: 48 }}>🛍️</Text>
           </View>
         )}
         {item.envioDisponible && (
-          <View className="absolute top-2 left-2 bg-blue-500 px-2 py-0.5 rounded-full">
-            <Text className="text-white text-xs font-semibold">🛵 Envío</Text>
-          </View>
+          <View style={s.envioBadge}><Text style={s.envioBadgeText}>🛵 Envío</Text></View>
         )}
         {!item.stockDisponible && (
-          <View className="absolute inset-0 bg-black/40 items-center justify-center">
-            <Text className="text-white font-bold text-lg">Sin stock</Text>
-          </View>
+          <View style={s.sinStock}><Text style={s.sinStockText}>Sin stock</Text></View>
         )}
       </View>
-      <View className="p-4">
-        <View className="flex-row items-start justify-between mb-1">
-          <Text className="font-semibold text-gray-900 text-base flex-1 mr-2" numberOfLines={2}>{item.titulo}</Text>
-          <View className="bg-green-100 px-2 py-0.5 rounded-full">
-            <Text className="text-green-700 text-xs font-medium">{item.rubro}</Text>
-          </View>
+      <View style={s.cardBody}>
+        <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
+          <Text style={s.cardTitle} numberOfLines={2}>{item.titulo}</Text>
+          <View style={s.rubroBadge}><Text style={s.rubroText}>{item.rubro}</Text></View>
         </View>
-        {item.descripcion ? (
-          <Text className="text-gray-500 text-sm mb-3" numberOfLines={2}>{item.descripcion}</Text>
-        ) : null}
-        <View className="flex-row items-center justify-between">
-          <Text className="text-green-700 font-bold text-xl">${item.precio.toLocaleString("es-AR")}</Text>
+        {item.descripcion ? <Text style={s.cardDesc} numberOfLines={2}>{item.descripcion}</Text> : null}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text style={s.cardPrice}>${item.precio.toLocaleString("es-AR")}</Text>
           {esMio ? (
-            <View className="bg-green-100 px-3 py-1.5 rounded-xl">
-              <Text className="text-green-700 text-xs font-semibold">Tu publicación</Text>
-            </View>
+            <View style={s.miaBadge}><Text style={s.miaText}>Tu publicación</Text></View>
           ) : (
             <TouchableOpacity
-              className={`px-4 py-2 rounded-xl ${item.stockDisponible ? "bg-green-600" : "bg-gray-200"}`}
-              onPress={onMeInteresa}
-              disabled={!item.stockDisponible}
+              style={[s.interesaBtn, !item.stockDisponible && s.interesaBtnDisabled]}
+              onPress={onMeInteresa} disabled={!item.stockDisponible}
             >
-              <Text className={`text-sm font-semibold ${item.stockDisponible ? "text-white" : "text-gray-400"}`}>
-                💬 Me interesa
-              </Text>
+              <Text style={[s.interesaBtnText, !item.stockDisponible && { color: "#9ca3af" }]}>💬 Me interesa</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -151,72 +113,97 @@ export default function FeedVendoScreen() {
   const { publicaciones, loading } = usePublicacionesVendo(rubroFiltro);
 
   const filtradas = useMemo(() =>
-    publicaciones.filter((p) =>
-      p.titulo.toLowerCase().includes(busqueda.toLowerCase())
-    ), [publicaciones, busqueda]
+    publicaciones.filter((p) => p.titulo.toLowerCase().includes(busqueda.toLowerCase())),
+    [publicaciones, busqueda]
   );
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="px-4 pt-4 pb-2 bg-white border-b border-gray-100">
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-3 py-2.5 mb-3">
-          <Text className="text-gray-400 mr-2">🔍</Text>
-          <TextInput
-            placeholder="Buscar productos..."
-            value={busqueda}
-            onChangeText={setBusqueda}
-            className="flex-1 text-sm text-gray-900"
-            placeholderTextColor="#9ca3af"
-          />
+    <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+      <View style={s.searchBar}>
+        <View style={s.searchInput}>
+          <Text style={{ color: "#9ca3af", marginRight: 8 }}>🔍</Text>
+          <TextInput placeholder="Buscar productos..." value={busqueda} onChangeText={setBusqueda}
+            style={{ flex: 1, fontSize: 14, color: "#111827" }} placeholderTextColor="#9ca3af" />
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <TouchableOpacity
-            onPress={() => setRubroFiltro(undefined)}
-            className={`mr-2 px-4 py-2 rounded-full border ${!rubroFiltro ? "bg-green-600 border-green-600" : "bg-white border-gray-200"}`}
-          >
-            <Text className={`text-sm font-medium ${!rubroFiltro ? "text-white" : "text-gray-600"}`}>Todos</Text>
+          <TouchableOpacity onPress={() => setRubroFiltro(undefined)}
+            style={[s.chip, !rubroFiltro && s.chipActive]}>
+            <Text style={[s.chipText, !rubroFiltro && s.chipTextActive]}>Todos</Text>
           </TouchableOpacity>
           {RUBROS.map((r) => (
-            <TouchableOpacity
-              key={r}
-              onPress={() => setRubroFiltro(r === rubroFiltro ? undefined : r)}
-              className={`mr-2 px-4 py-2 rounded-full border ${rubroFiltro === r ? "bg-green-600 border-green-600" : "bg-white border-gray-200"}`}
-            >
-              <Text className={`text-sm font-medium ${rubroFiltro === r ? "text-white" : "text-gray-600"}`}>{r}</Text>
+            <TouchableOpacity key={r} onPress={() => setRubroFiltro(r === rubroFiltro ? undefined : r)}
+              style={[s.chip, rubroFiltro === r && s.chipActive]}>
+              <Text style={[s.chipText, rubroFiltro === r && s.chipTextActive]}>{r}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
       {loading ? (
-        <View className="flex-1 items-center justify-center"><ActivityIndicator color="#16a34a" size="large" /></View>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color="#16a34a" size="large" />
+        </View>
       ) : (
         <FlatList
           data={filtradas}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <CardVendo
-              item={item}
-              esMio={item.comercioId === usuario?.id}
-              onMeInteresa={() => {
-                if (!usuario) { router.push("/login"); return; }
-                setModalPub(item);
-              }}
-            />
+            <CardVendo item={item} esMio={item.comercioId === usuario?.id}
+              onMeInteresa={() => { if (!usuario) { router.push("/login"); return; } setModalPub(item); }} />
           )}
           contentContainerStyle={{ paddingVertical: 16 }}
           ListEmptyComponent={
-            <View className="items-center py-20">
-              <Text style={{ fontSize: 48 }} className="mb-4">🏪</Text>
-              <Text className="text-gray-500 text-base">No hay publicaciones aún</Text>
+            <View style={{ alignItems: "center", paddingVertical: 80 }}>
+              <Text style={{ fontSize: 48, marginBottom: 16 }}>🏪</Text>
+              <Text style={{ color: "#6b7280", fontSize: 16 }}>No hay publicaciones aún</Text>
             </View>
           }
         />
       )}
-
-      {modalPub && (
-        <ModalMeInteresa pub={modalPub} onClose={() => setModalPub(null)} />
-      )}
+      {modalPub && <ModalMeInteresa pub={modalPub} onClose={() => setModalPub(null)} />}
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
+  sheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "white", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  sheetImg: { width: "100%", height: 200, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  sheetImgEmpty: { backgroundColor: "#f0fdf4", alignItems: "center", justifyContent: "center" },
+  sheetBody: { padding: 24 },
+  sheetTitle: { fontWeight: "700", color: "#111827", fontSize: 20 },
+  sheetPrice: { color: "#15803d", fontWeight: "700", fontSize: 24, marginTop: 4 },
+  sheetEnvio: { fontSize: 13, color: "#2563eb", marginTop: 4 },
+  sheetHow: { fontSize: 14, fontWeight: "600", color: "#374151", marginTop: 20, marginBottom: 12, textAlign: "center" },
+  sheetBtn: { backgroundColor: "#16a34a", borderRadius: 16, paddingVertical: 16, alignItems: "center", marginBottom: 12 },
+  btnDisabled: { backgroundColor: "#86efac" },
+  sheetBtnText: { color: "white", fontWeight: "700", fontSize: 16 },
+  sheetBtnOutline: { borderWidth: 2, borderColor: "#16a34a", borderRadius: 16, paddingVertical: 16, alignItems: "center", marginBottom: 12 },
+  sheetBtnOutlineText: { color: "#15803d", fontWeight: "700", fontSize: 16 },
+  cancelBtn: { paddingVertical: 8, alignItems: "center" },
+  cancelText: { color: "#9ca3af", fontSize: 14 },
+  searchBar: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, backgroundColor: "white", borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+  searchInput: { flexDirection: "row", alignItems: "center", backgroundColor: "#f3f4f6", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
+  chip: { marginRight: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#e5e7eb", backgroundColor: "white" },
+  chipActive: { backgroundColor: "#16a34a", borderColor: "#16a34a" },
+  chipText: { fontSize: 13, fontWeight: "500", color: "#4b5563" },
+  chipTextActive: { color: "white" },
+  card: { backgroundColor: "white", borderRadius: 16, overflow: "hidden", marginBottom: 16, marginHorizontal: 16, borderWidth: 1, borderColor: "#f3f4f6" },
+  cardImg: { width: "100%", height: 180 },
+  cardImgEmpty: { backgroundColor: "#f0fdf4", alignItems: "center", justifyContent: "center" },
+  envioBadge: { position: "absolute", top: 8, left: 8, backgroundColor: "#3b82f6", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  envioBadgeText: { color: "white", fontSize: 11, fontWeight: "600" },
+  sinStock: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center" },
+  sinStockText: { color: "white", fontWeight: "700", fontSize: 18 },
+  cardBody: { padding: 16 },
+  cardTitle: { fontWeight: "600", color: "#111827", fontSize: 16, flex: 1, marginRight: 8 },
+  cardDesc: { color: "#6b7280", fontSize: 14, marginBottom: 12 },
+  cardPrice: { color: "#15803d", fontWeight: "700", fontSize: 20 },
+  rubroBadge: { backgroundColor: "#dcfce7", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  rubroText: { color: "#15803d", fontSize: 11, fontWeight: "500" },
+  miaBadge: { backgroundColor: "#dcfce7", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  miaText: { color: "#15803d", fontSize: 12, fontWeight: "600" },
+  interesaBtn: { backgroundColor: "#16a34a", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
+  interesaBtnDisabled: { backgroundColor: "#e5e7eb" },
+  interesaBtnText: { color: "white", fontSize: 14, fontWeight: "600" },
+});

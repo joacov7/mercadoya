@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
-  KeyboardAvoidingView, Platform, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ActivityIndicator, StyleSheet,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { useAuth } from "@mercadovivo/hooks";
-import { useChat } from "@mercadovivo/hooks";
+import { useAuth, useChat } from "@mercadovivo/hooks";
 import {
   crearPedido, actualizarEstadoPedido, suscribirPedido,
   calificarPedido, yaCalificó,
@@ -14,19 +13,12 @@ import { db, COLECCIONES, doc, getDoc } from "@mercadovivo/firebase";
 import type { Chat, Pedido } from "@mercadovivo/types";
 
 const ESTADOS_LABEL: Record<string, string> = {
-  pendiente: "⏳ Pendiente",
-  aceptado: "✅ Aceptado",
-  listo: "📦 Listo",
-  entregado: "🎉 Entregado",
-  cancelado: "❌ Cancelado",
+  pendiente: "⏳ Pendiente", aceptado: "✅ Aceptado",
+  listo: "📦 Listo", entregado: "🎉 Entregado", cancelado: "❌ Cancelado",
 };
-
 const ESTADOS_COLOR: Record<string, string> = {
-  pendiente: "#fef3c7",
-  aceptado: "#dbeafe",
-  listo: "#ede9fe",
-  entregado: "#dcfce7",
-  cancelado: "#fee2e2",
+  pendiente: "#fef3c7", aceptado: "#dbeafe",
+  listo: "#ede9fe", entregado: "#dcfce7", cancelado: "#fee2e2",
 };
 
 export default function ChatScreen() {
@@ -61,9 +53,7 @@ export default function ChatScreen() {
   }, [pedido, usuario]);
 
   useEffect(() => {
-    if (mensajes.length > 0) {
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-    }
+    if (mensajes.length > 0) setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   }, [mensajes]);
 
   const esComercio = !!usuario && !!chat && chat.comercioId === usuario.id;
@@ -82,16 +72,11 @@ export default function ChatScreen() {
     try {
       if (!chat.pedidoId) {
         const pedidoId = await crearPedido({
-          chatId,
-          clienteId: chat.clienteId,
-          comercioId: chat.comercioId,
+          chatId, clienteId: chat.clienteId, comercioId: chat.comercioId,
           publicacionId: chat.publicacionRelacionada,
           titulo: primerMensaje.split('"')[1] ?? "Producto",
-          precio: 0,
-          modalidad: necesitaEnvio ? "envio" : "retiro",
-          estado: "aceptado",
-          calificacionCliente: false,
-          calificacionComercio: false,
+          precio: 0, modalidad: necesitaEnvio ? "envio" : "retiro",
+          estado: "aceptado", calificacionCliente: false, calificacionComercio: false,
         });
         setChat((prev) => prev ? { ...prev, pedidoId } : prev);
         await enviar("✅ Pedido aceptado. Me estoy preparando.");
@@ -110,13 +95,7 @@ export default function ChatScreen() {
     try {
       const destinatarioId = esComercio ? pedido.clienteId : pedido.comercioId;
       const campo = esComercio ? "calificacionComercio" : "calificacionCliente";
-      await calificarPedido(pedido.id, campo, {
-        pedidoId: pedido.id,
-        remitenteId: usuario.id,
-        destinatarioId,
-        pulgar,
-        resena,
-      });
+      await calificarPedido(pedido.id, campo, { pedidoId: pedido.id, remitenteId: usuario.id, destinatarioId, pulgar, resena });
       setYaCalifiqué(true);
       setShowCalificar(false);
     } finally {
@@ -124,114 +103,74 @@ export default function ChatScreen() {
     }
   };
 
-  if (loading) return <View className="flex-1 items-center justify-center"><ActivityIndicator color="#16a34a" size="large" /></View>;
+  if (loading) return <View style={s.center}><ActivityIndicator color="#16a34a" size="large" /></View>;
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-gray-50"
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={90}
-    >
-      {/* Estado del pedido */}
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
       {pedido && (
-        <View style={{ backgroundColor: ESTADOS_COLOR[pedido.estado] }} className="px-4 py-3">
-          <Text className="text-gray-800 font-semibold text-sm text-center">
-            {ESTADOS_LABEL[pedido.estado]}
-          </Text>
+        <View style={[s.estadoBanner, { backgroundColor: ESTADOS_COLOR[pedido.estado] }]}>
+          <Text style={s.estadoText}>{ESTADOS_LABEL[pedido.estado]}</Text>
         </View>
       )}
 
-      {/* Acciones */}
-      <View className="bg-white px-4 py-3 border-b border-gray-100 flex-row flex-wrap gap-2">
+      <View style={s.actionsBar}>
         {esComercio && (!pedido || pedido.estado === "pendiente") && (
-          <TouchableOpacity
-            className={`px-4 py-2 rounded-xl ${loadingAccion ? "bg-green-300" : "bg-green-600"}`}
-            onPress={handleAceptar}
-            disabled={loadingAccion}
-          >
-            <Text className="text-white text-sm font-semibold">✅ Aceptar pedido</Text>
+          <TouchableOpacity style={[s.actionBtn, { backgroundColor: loadingAccion ? "#86efac" : "#16a34a" }]}
+            onPress={handleAceptar} disabled={loadingAccion}>
+            <Text style={s.actionBtnText}>✅ Aceptar pedido</Text>
           </TouchableOpacity>
         )}
         {esComercio && pedido?.estado === "aceptado" && (
-          <TouchableOpacity
-            className="bg-purple-600 px-4 py-2 rounded-xl"
+          <TouchableOpacity style={[s.actionBtn, { backgroundColor: "#7c3aed" }]}
             onPress={async () => {
               setLoadingAccion(true);
               await actualizarEstadoPedido(pedido.id, "listo");
               await enviar(necesitaEnvio ? "🛵 El pedido está en camino." : "📦 Listo para retirar en el local.");
               setLoadingAccion(false);
-            }}
-            disabled={loadingAccion}
-          >
-            <Text className="text-white text-sm font-semibold">{necesitaEnvio ? "🛵 En camino" : "📦 Listo"}</Text>
+            }} disabled={loadingAccion}>
+            <Text style={s.actionBtnText}>{necesitaEnvio ? "🛵 En camino" : "📦 Listo"}</Text>
           </TouchableOpacity>
         )}
         {esComercio && pedido?.estado === "listo" && (
-          <TouchableOpacity
-            className="bg-green-600 px-4 py-2 rounded-xl"
+          <TouchableOpacity style={[s.actionBtn, { backgroundColor: "#16a34a" }]}
             onPress={async () => {
               setLoadingAccion(true);
               await actualizarEstadoPedido(pedido.id, "entregado");
               await enviar("🎉 Pedido entregado. ¡Gracias!");
               setShowCalificar(true);
               setLoadingAccion(false);
-            }}
-            disabled={loadingAccion}
-          >
-            <Text className="text-white text-sm font-semibold">🎉 Entregado</Text>
+            }} disabled={loadingAccion}>
+            <Text style={s.actionBtnText}>🎉 Entregado</Text>
           </TouchableOpacity>
         )}
         {pedido?.estado === "entregado" && !yaCalifiqué && (
-          <TouchableOpacity
-            className="bg-amber-500 px-4 py-2 rounded-xl"
-            onPress={() => setShowCalificar(true)}
-          >
-            <Text className="text-white text-sm font-semibold">⭐ Calificar</Text>
+          <TouchableOpacity style={[s.actionBtn, { backgroundColor: "#f59e0b" }]} onPress={() => setShowCalificar(true)}>
+            <Text style={s.actionBtnText}>⭐ Calificar</Text>
           </TouchableOpacity>
         )}
-        {yaCalifiqué && (
-          <Text className="text-xs text-gray-400 self-center">✓ Ya calificaste</Text>
-        )}
+        {yaCalifiqué && <Text style={s.yaCalif}>✓ Ya calificaste</Text>}
       </View>
 
-      {/* Calificar */}
       {showCalificar && (
-        <View className="bg-green-50 border-b border-green-200 p-4">
-          <Text className="font-semibold text-green-800 text-sm mb-3">⭐ Calificá tu experiencia</Text>
-          <View className="flex-row gap-3 mb-3">
-            <TouchableOpacity
-              className={`flex-1 py-3 rounded-xl border-2 items-center ${pulgar === "positivo" ? "border-green-500 bg-green-100" : "border-gray-200 bg-white"}`}
-              onPress={() => setPulgar("positivo")}
-            >
-              <Text className="text-lg">👍</Text>
+        <View style={s.calificarBox}>
+          <Text style={s.calificarTitle}>⭐ Calificá tu experiencia</Text>
+          <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
+            <TouchableOpacity style={[s.pulgarBtn, pulgar === "positivo" && s.pulgarPos]} onPress={() => setPulgar("positivo")}>
+              <Text style={{ fontSize: 24 }}>👍</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              className={`flex-1 py-3 rounded-xl border-2 items-center ${pulgar === "negativo" ? "border-red-400 bg-red-50" : "border-gray-200 bg-white"}`}
-              onPress={() => setPulgar("negativo")}
-            >
-              <Text className="text-lg">👎</Text>
+            <TouchableOpacity style={[s.pulgarBtn, pulgar === "negativo" && s.pulgarNeg]} onPress={() => setPulgar("negativo")}>
+              <Text style={{ fontSize: 24 }}>👎</Text>
             </TouchableOpacity>
           </View>
-          <TextInput
-            value={resena}
-            onChangeText={setResena}
-            placeholder="Escribí una reseña (opcional)..."
-            placeholderTextColor="#9ca3af"
-            multiline
-            className="bg-white border border-green-300 rounded-xl px-3 py-2.5 text-sm text-gray-900 mb-3"
-            style={{ minHeight: 60 }}
-          />
-          <TouchableOpacity
-            className={`py-3 rounded-xl items-center ${!pulgar || loadingAccion ? "bg-green-300" : "bg-green-600"}`}
-            onPress={handleCalificar}
-            disabled={!pulgar || loadingAccion}
-          >
-            <Text className="text-white font-semibold">Enviar calificación</Text>
+          <TextInput value={resena} onChangeText={setResena} placeholder="Escribí una reseña (opcional)..."
+            placeholderTextColor="#9ca3af" multiline style={s.resenaInput} />
+          <TouchableOpacity style={[s.calificarBtn, (!pulgar || loadingAccion) && { backgroundColor: "#86efac" }]}
+            onPress={handleCalificar} disabled={!pulgar || loadingAccion}>
+            <Text style={{ color: "white", fontWeight: "600" }}>Enviar calificación</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Mensajes */}
       <FlatList
         ref={flatListRef}
         data={mensajes}
@@ -240,40 +179,52 @@ export default function ChatScreen() {
         renderItem={({ item }) => {
           const esMio = item.remitenteId === usuario?.id;
           return (
-            <View className={`flex-row ${esMio ? "justify-end" : "justify-start"}`}>
-              <View className={`max-w-[80%] px-4 py-2.5 rounded-2xl ${
-                esMio ? "bg-green-600 rounded-br-sm" : "bg-white border border-gray-200 rounded-bl-sm"
-              }`}>
-                <Text className={esMio ? "text-white" : "text-gray-900"}>{item.texto}</Text>
+            <View style={{ flexDirection: "row", justifyContent: esMio ? "flex-end" : "flex-start" }}>
+              <View style={[s.bubble, esMio ? s.bubbleMio : s.bubbleOtro]}>
+                <Text style={{ color: esMio ? "white" : "#111827" }}>{item.texto}</Text>
               </View>
             </View>
           );
         }}
         ListEmptyComponent={
-          <View className="items-center py-12">
-            <Text className="text-gray-400 text-sm">Todavía no hay mensajes. ¡Escribí el primero!</Text>
+          <View style={s.emptyMsg}>
+            <Text style={{ color: "#9ca3af", fontSize: 14 }}>Todavía no hay mensajes. ¡Escribí el primero!</Text>
           </View>
         }
       />
 
-      {/* Input */}
-      <View className="flex-row items-center gap-2 px-4 pb-4 pt-2 bg-white border-t border-gray-100">
-        <TextInput
-          value={texto}
-          onChangeText={setTexto}
-          placeholder="Escribí un mensaje..."
-          placeholderTextColor="#9ca3af"
-          className="flex-1 bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-900"
-          multiline
-          maxLength={500}
-        />
-        <TouchableOpacity
-          onPress={handleEnviar}
-          className="bg-green-600 w-11 h-11 rounded-xl items-center justify-center"
-        >
-          <Text className="text-white text-xl">↑</Text>
+      <View style={s.inputBar}>
+        <TextInput value={texto} onChangeText={setTexto} placeholder="Escribí un mensaje..."
+          placeholderTextColor="#9ca3af" style={s.msgInput} multiline maxLength={500} />
+        <TouchableOpacity style={s.sendBtn} onPress={handleEnviar}>
+          <Text style={{ color: "white", fontSize: 20 }}>↑</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: "#f9fafb" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  estadoBanner: { paddingHorizontal: 16, paddingVertical: 12 },
+  estadoText: { color: "#1f2937", fontWeight: "600", fontSize: 14, textAlign: "center" },
+  actionsBar: { backgroundColor: "white", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#f3f4f6", flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  actionBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
+  actionBtnText: { color: "white", fontSize: 13, fontWeight: "600" },
+  yaCalif: { fontSize: 12, color: "#9ca3af", alignSelf: "center" },
+  calificarBox: { backgroundColor: "#f0fdf4", borderBottomWidth: 1, borderBottomColor: "#bbf7d0", padding: 16 },
+  calificarTitle: { fontWeight: "600", color: "#15803d", fontSize: 14, marginBottom: 12 },
+  pulgarBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 2, borderColor: "#e5e7eb", backgroundColor: "white", alignItems: "center" },
+  pulgarPos: { borderColor: "#22c55e", backgroundColor: "#dcfce7" },
+  pulgarNeg: { borderColor: "#f87171", backgroundColor: "#fef2f2" },
+  resenaInput: { backgroundColor: "white", borderWidth: 1, borderColor: "#bbf7d0", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: "#111827", minHeight: 60, marginBottom: 12 },
+  calificarBtn: { backgroundColor: "#16a34a", borderRadius: 12, paddingVertical: 12, alignItems: "center" },
+  bubble: { maxWidth: "80%", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 18 },
+  bubbleMio: { backgroundColor: "#16a34a", borderBottomRightRadius: 4 },
+  bubbleOtro: { backgroundColor: "white", borderWidth: 1, borderColor: "#e5e7eb", borderBottomLeftRadius: 4 },
+  emptyMsg: { alignItems: "center", paddingVertical: 48 },
+  inputBar: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8, backgroundColor: "white", borderTopWidth: 1, borderTopColor: "#f3f4f6" },
+  msgInput: { flex: 1, backgroundColor: "#f3f4f6", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, color: "#111827" },
+  sendBtn: { backgroundColor: "#16a34a", width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+});

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import {
   View, Text, FlatList, TextInput, ScrollView, TouchableOpacity,
-  ActivityIndicator, Modal,
+  ActivityIndicator, Modal, StyleSheet,
 } from "react-native";
 import { router } from "expo-router";
 import { usePublicacionesBusco, useAuth } from "@mercadovivo/hooks";
@@ -17,11 +17,7 @@ function tiempoRelativo(ts: number) {
   return `hace ${Math.floor(hs / 24)} días`;
 }
 
-function ModalOferta({ pub, onClose, onEnviada }: {
-  pub: PublicacionBusco;
-  onClose: () => void;
-  onEnviada: () => void;
-}) {
+function ModalOferta({ pub, onClose, onEnviada }: { pub: PublicacionBusco; onClose: () => void; onEnviada: () => void }) {
   const { usuario } = useAuth();
   const [mensaje, setMensaje] = useState("");
   const [precio, setPrecio] = useState("");
@@ -33,13 +29,7 @@ function ModalOferta({ pub, onClose, onEnviada }: {
     setLoading(true);
     setError("");
     try {
-      await crearOferta({
-        publicacionBuscoId: pub.id,
-        comercioId: usuario.id,
-        nombreComercio: usuario.nombre,
-        mensaje,
-        precio: Number(precio),
-      });
+      await crearOferta({ publicacionBuscoId: pub.id, comercioId: usuario.id, nombreComercio: usuario.nombre, mensaje, precio: Number(precio) });
       onEnviada();
       onClose();
     } catch {
@@ -51,47 +41,30 @@ function ModalOferta({ pub, onClose, onEnviada }: {
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <TouchableOpacity className="flex-1 bg-black/50" activeOpacity={1} onPress={onClose}>
-        <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6">
-          <Text className="font-bold text-gray-900 text-lg mb-1">Hacer una oferta</Text>
-          <Text className="text-gray-500 text-sm mb-5">"{pub.titulo}"</Text>
-
-          <Text className="text-sm font-medium text-gray-700 mb-1.5">Tu propuesta</Text>
+      <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={onClose}>
+        <View style={s.sheet}>
+          <Text style={s.sheetTitle}>Hacer una oferta</Text>
+          <Text style={s.sheetSub}>"{pub.titulo}"</Text>
+          <Text style={s.label}>Tu propuesta</Text>
           <TextInput
-            value={mensaje}
-            onChangeText={setMensaje}
-            placeholder="Describí qué podés ofrecer..."
-            placeholderTextColor="#9ca3af"
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 mb-4"
-            style={{ minHeight: 80 }}
+            value={mensaje} onChangeText={setMensaje} placeholder="Describí qué podés ofrecer..."
+            placeholderTextColor="#9ca3af" multiline numberOfLines={3} textAlignVertical="top"
+            style={[s.input, { minHeight: 80 }]}
           />
-
-          <Text className="text-sm font-medium text-gray-700 mb-1.5">Precio ($)</Text>
+          <Text style={s.label}>Precio ($)</Text>
           <TextInput
-            value={precio}
-            onChangeText={setPrecio}
-            placeholder="0"
-            placeholderTextColor="#9ca3af"
-            keyboardType="numeric"
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 mb-4"
+            value={precio} onChangeText={setPrecio} placeholder="0"
+            placeholderTextColor="#9ca3af" keyboardType="numeric" style={s.input}
           />
-
-          {error ? <Text className="text-red-500 text-sm mb-3">{error}</Text> : null}
-
+          {error ? <Text style={s.error}>{error}</Text> : null}
           <TouchableOpacity
-            className={`py-4 rounded-2xl items-center mb-3 ${loading || !mensaje || !precio ? "bg-green-300" : "bg-green-600"}`}
-            onPress={handleSubmit}
-            disabled={loading || !mensaje || !precio}
+            style={[s.btn, (loading || !mensaje || !precio) && s.btnDisabled]}
+            onPress={handleSubmit} disabled={loading || !mensaje || !precio}
           >
-            <Text className="text-white font-bold text-base">
-              {loading ? "Enviando..." : "Enviar oferta"}
-            </Text>
+            <Text style={s.btnText}>{loading ? "Enviando..." : "Enviar oferta"}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} className="py-2 items-center">
-            <Text className="text-gray-400 text-sm">Cancelar</Text>
+          <TouchableOpacity onPress={onClose} style={s.cancelBtn}>
+            <Text style={s.cancelText}>Cancelar</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -100,43 +73,27 @@ function ModalOferta({ pub, onClose, onEnviada }: {
 }
 
 function CardBusco({ item, onOfrecer, ofertaEnviada, esPropia }: {
-  item: PublicacionBusco;
-  onOfrecer: () => void;
-  ofertaEnviada: boolean;
-  esPropia: boolean;
+  item: PublicacionBusco; onOfrecer: () => void; ofertaEnviada: boolean; esPropia: boolean;
 }) {
   return (
-    <TouchableOpacity
-      className="bg-white rounded-2xl p-4 mx-4 mb-3 border border-gray-100 shadow-sm"
-      onPress={() => router.push(`/busco/${item.id}` as any)}
-      activeOpacity={0.8}
-    >
-      <View className="flex-row items-start justify-between mb-2">
-        <View className="flex-1 mr-2">
-          <Text className="text-xs text-amber-600 font-semibold uppercase tracking-wider">Busco</Text>
-          <Text className="font-semibold text-gray-900 text-base mt-0.5" numberOfLines={2}>{item.titulo}</Text>
+    <TouchableOpacity style={s.card} onPress={() => router.push(`/busco/${item.id}` as any)} activeOpacity={0.8}>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text style={s.buscoLabel}>Busco</Text>
+          <Text style={s.cardTitle} numberOfLines={2}>{item.titulo}</Text>
         </View>
-        <View className="bg-amber-100 px-2 py-0.5 rounded-full">
-          <Text className="text-amber-700 text-xs font-medium">{item.rubro}</Text>
-        </View>
+        <View style={s.rubroBadge}><Text style={s.rubroText}>{item.rubro}</Text></View>
       </View>
-      {item.descripcion ? (
-        <Text className="text-gray-500 text-sm mb-3" numberOfLines={2}>{item.descripcion}</Text>
-      ) : null}
-      <View className="flex-row items-center justify-between">
-        <Text className="text-xs text-gray-400">{tiempoRelativo(item.createdAt)}</Text>
+      {item.descripcion ? <Text style={s.cardDesc} numberOfLines={2}>{item.descripcion}</Text> : null}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <Text style={s.timeText}>{tiempoRelativo(item.createdAt)}</Text>
         {esPropia ? (
-          <View className="bg-green-100 px-3 py-1 rounded-full">
-            <Text className="text-green-700 text-xs font-medium">Tu publicación</Text>
-          </View>
+          <View style={s.miaBadge}><Text style={s.miaText}>Tu publicación</Text></View>
         ) : ofertaEnviada ? (
-          <Text className="text-xs text-green-600 font-semibold">✓ Oferta enviada</Text>
+          <Text style={s.enviada}>✓ Oferta enviada</Text>
         ) : (
-          <TouchableOpacity
-            className="bg-green-600 px-4 py-2 rounded-xl"
-            onPress={(e) => { e.stopPropagation?.(); onOfrecer(); }}
-          >
-            <Text className="text-white text-sm font-semibold">Hacer oferta</Text>
+          <TouchableOpacity style={s.ofertaBtn} onPress={onOfrecer}>
+            <Text style={s.ofertaBtnText}>Hacer oferta</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -160,78 +117,91 @@ export default function FeedBuscoScreen() {
   );
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="px-4 pt-4 pb-2 bg-white border-b border-gray-100">
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-3 py-2.5 mb-3">
-          <Text className="text-gray-400 mr-2">🔍</Text>
-          <TextInput
-            placeholder="Buscar solicitudes..."
-            value={busqueda}
-            onChangeText={setBusqueda}
-            className="flex-1 text-sm text-gray-900"
-            placeholderTextColor="#9ca3af"
-          />
+    <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+      <View style={s.searchBar}>
+        <View style={s.searchInput}>
+          <Text style={{ color: "#9ca3af", marginRight: 8 }}>🔍</Text>
+          <TextInput placeholder="Buscar solicitudes..." value={busqueda} onChangeText={setBusqueda}
+            style={{ flex: 1, fontSize: 14, color: "#111827" }} placeholderTextColor="#9ca3af" />
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <TouchableOpacity
-            onPress={() => setRubroFiltro(undefined)}
-            className={`mr-2 px-4 py-2 rounded-full border ${!rubroFiltro ? "bg-green-600 border-green-600" : "bg-white border-gray-200"}`}
-          >
-            <Text className={`text-sm font-medium ${!rubroFiltro ? "text-white" : "text-gray-600"}`}>Todos</Text>
+          <TouchableOpacity onPress={() => setRubroFiltro(undefined)} style={[s.chip, !rubroFiltro && s.chipActive]}>
+            <Text style={[s.chipText, !rubroFiltro && s.chipTextActive]}>Todos</Text>
           </TouchableOpacity>
           {RUBROS.map((r) => (
-            <TouchableOpacity
-              key={r}
-              onPress={() => setRubroFiltro(r === rubroFiltro ? undefined : r)}
-              className={`mr-2 px-4 py-2 rounded-full border ${rubroFiltro === r ? "bg-green-600 border-green-600" : "bg-white border-gray-200"}`}
-            >
-              <Text className={`text-sm font-medium ${rubroFiltro === r ? "text-white" : "text-gray-600"}`}>{r}</Text>
+            <TouchableOpacity key={r} onPress={() => setRubroFiltro(r === rubroFiltro ? undefined : r)}
+              style={[s.chip, rubroFiltro === r && s.chipActive]}>
+              <Text style={[s.chipText, rubroFiltro === r && s.chipTextActive]}>{r}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
       {loading ? (
-        <View className="flex-1 items-center justify-center"><ActivityIndicator color="#16a34a" size="large" /></View>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color="#16a34a" size="large" />
+        </View>
       ) : (
         <FlatList
           data={filtradas}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <CardBusco
-              item={item}
-              esPropia={item.clienteId === usuario?.id}
+            <CardBusco item={item} esPropia={item.clienteId === usuario?.id}
               ofertaEnviada={enviados.has(item.id)}
-              onOfrecer={() => {
-                if (!usuario) { router.push("/login"); return; }
-                setModalPub(item);
-              }}
-            />
+              onOfrecer={() => { if (!usuario) { router.push("/login"); return; } setModalPub(item); }} />
           )}
           contentContainerStyle={{ paddingVertical: 16 }}
           ListEmptyComponent={
-            <View className="items-center py-20">
-              <Text style={{ fontSize: 48 }} className="mb-4">🔍</Text>
-              <Text className="text-gray-500 text-base">No hay solicitudes activas</Text>
+            <View style={{ alignItems: "center", paddingVertical: 80 }}>
+              <Text style={{ fontSize: 48, marginBottom: 16 }}>🔍</Text>
+              <Text style={{ color: "#6b7280", fontSize: 16 }}>No hay solicitudes activas</Text>
             </View>
           }
         />
       )}
 
-      <TouchableOpacity
-        className="absolute bottom-6 right-6 bg-green-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
-        onPress={() => usuario ? router.push("/(tabs)/publicar") : router.push("/login")}
-      >
-        <Text className="text-white text-3xl">+</Text>
+      <TouchableOpacity style={s.fab} onPress={() => usuario ? router.push("/(tabs)/publicar") : router.push("/login")}>
+        <Text style={{ color: "white", fontSize: 28, fontWeight: "300" }}>+</Text>
       </TouchableOpacity>
 
       {modalPub && (
-        <ModalOferta
-          pub={modalPub}
-          onClose={() => setModalPub(null)}
-          onEnviada={() => setEnviados((prev) => new Set([...prev, modalPub!.id]))}
-        />
+        <ModalOferta pub={modalPub} onClose={() => setModalPub(null)}
+          onEnviada={() => setEnviados((prev) => new Set([...prev, modalPub!.id]))} />
       )}
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
+  sheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "white", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
+  sheetTitle: { fontWeight: "700", color: "#111827", fontSize: 18, marginBottom: 4 },
+  sheetSub: { color: "#6b7280", fontSize: 14, marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: "500", color: "#374151", marginBottom: 6 },
+  input: { backgroundColor: "#f9fafb", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, color: "#111827", marginBottom: 16 },
+  error: { color: "#ef4444", fontSize: 13, marginBottom: 12 },
+  btn: { backgroundColor: "#16a34a", borderRadius: 16, paddingVertical: 16, alignItems: "center", marginBottom: 12 },
+  btnDisabled: { backgroundColor: "#86efac" },
+  btnText: { color: "white", fontWeight: "700", fontSize: 16 },
+  cancelBtn: { paddingVertical: 8, alignItems: "center" },
+  cancelText: { color: "#9ca3af", fontSize: 14 },
+  searchBar: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, backgroundColor: "white", borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+  searchInput: { flexDirection: "row", alignItems: "center", backgroundColor: "#f3f4f6", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
+  chip: { marginRight: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#e5e7eb", backgroundColor: "white" },
+  chipActive: { backgroundColor: "#16a34a", borderColor: "#16a34a" },
+  chipText: { fontSize: 13, fontWeight: "500", color: "#4b5563" },
+  chipTextActive: { color: "white" },
+  card: { backgroundColor: "white", borderRadius: 16, padding: 16, marginHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: "#f3f4f6" },
+  buscoLabel: { fontSize: 11, color: "#d97706", fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  cardTitle: { fontWeight: "600", color: "#111827", fontSize: 16, marginTop: 2 },
+  cardDesc: { color: "#6b7280", fontSize: 13, marginBottom: 12 },
+  rubroBadge: { backgroundColor: "#fef3c7", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  rubroText: { color: "#92400e", fontSize: 11, fontWeight: "500" },
+  timeText: { fontSize: 12, color: "#9ca3af" },
+  miaBadge: { backgroundColor: "#dcfce7", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
+  miaText: { color: "#15803d", fontSize: 12, fontWeight: "500" },
+  enviada: { fontSize: 12, color: "#16a34a", fontWeight: "600" },
+  ofertaBtn: { backgroundColor: "#16a34a", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
+  ofertaBtnText: { color: "white", fontSize: 13, fontWeight: "600" },
+  fab: { position: "absolute", bottom: 24, right: 24, backgroundColor: "#16a34a", width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center" },
+});

@@ -1,8 +1,7 @@
 import React from "react";
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
 import { router } from "expo-router";
-import { useAuth } from "@mercadovivo/hooks";
-import { useChats } from "@mercadovivo/hooks";
+import { useAuth, useChats } from "@mercadovivo/hooks";
 
 function tiempoRelativo(ts: number): string {
   const mins = Math.floor((Date.now() - ts) / 60000);
@@ -18,23 +17,23 @@ export default function ChatsScreen() {
   const { chats, loading } = useChats(usuario?.id);
 
   if (authLoading || loading) {
-    return <View className="flex-1 items-center justify-center"><ActivityIndicator color="#16a34a" size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color="#16a34a" size="large" /></View>;
   }
 
   if (!usuario) {
     return (
-      <View className="flex-1 items-center justify-center px-8">
-        <Text style={{ fontSize: 48 }} className="mb-4">🔐</Text>
-        <Text className="text-lg font-semibold text-gray-900 mb-2 text-center">Iniciá sesión para ver tus chats</Text>
-        <TouchableOpacity className="bg-green-600 px-6 py-3 rounded-xl mt-4" onPress={() => router.push("/login")}>
-          <Text className="text-white font-semibold">Ingresar</Text>
+      <View style={s.center}>
+        <Text style={{ fontSize: 48, marginBottom: 16 }}>🔐</Text>
+        <Text style={s.emptyTitle}>Iniciá sesión para ver tus chats</Text>
+        <TouchableOpacity style={s.loginBtn} onPress={() => router.push("/login")}>
+          <Text style={s.loginBtnText}>Ingresar</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
       <FlatList
         data={chats}
         keyExtractor={(item) => item.id}
@@ -42,44 +41,50 @@ export default function ChatsScreen() {
           const noLeido = item.lastSenderId && item.lastSenderId !== usuario.id;
           return (
             <TouchableOpacity
-              className={`mx-4 mb-2 rounded-2xl p-4 border flex-row items-center ${
-                noLeido ? "bg-green-50 border-green-200" : "bg-white border-gray-100"
-              }`}
+              style={[s.chatItem, noLeido && s.chatItemUnread]}
               onPress={() => router.push(`/chat/${item.id}` as any)}
             >
-              <View className={`w-12 h-12 rounded-full items-center justify-center mr-3 ${
-                item.tipo === "busco" ? "bg-amber-100" : "bg-green-100"
-              }`}>
+              <View style={[s.avatar, item.tipo === "busco" ? s.avatarBusco : s.avatarVendo]}>
                 <Text style={{ fontSize: 22 }}>{item.tipo === "busco" ? "🔍" : "🏪"}</Text>
               </View>
-              <View className="flex-1">
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-xs text-gray-400 font-medium uppercase">
-                    {item.tipo === "busco" ? "Busco" : "Vendo"}
-                  </Text>
-                  <Text className="text-xs text-gray-400">{tiempoRelativo(item.updatedAt)}</Text>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <Text style={s.chatType}>{item.tipo === "busco" ? "Busco" : "Vendo"}</Text>
+                  <Text style={s.chatTime}>{tiempoRelativo(item.updatedAt)}</Text>
                 </View>
-                <Text
-                  className={`text-sm mt-0.5 ${noLeido ? "font-semibold text-gray-900" : "text-gray-600"}`}
-                  numberOfLines={1}
-                >
+                <Text style={[s.chatMsg, noLeido && s.chatMsgUnread]} numberOfLines={1}>
                   {item.lastMessage ?? "Sin mensajes aún"}
                 </Text>
               </View>
-              {noLeido && (
-                <View className="w-3 h-3 bg-green-500 rounded-full ml-2" />
-              )}
+              {noLeido && <View style={s.dot} />}
             </TouchableOpacity>
           );
         }}
         contentContainerStyle={{ paddingVertical: 16 }}
         ListEmptyComponent={
-          <View className="items-center py-24">
-            <Text style={{ fontSize: 48 }} className="mb-4">💬</Text>
-            <Text className="text-gray-500 text-base">No tenés conversaciones aún</Text>
+          <View style={s.center}>
+            <Text style={{ fontSize: 48, marginBottom: 16 }}>💬</Text>
+            <Text style={s.emptyTitle}>No tenés conversaciones aún</Text>
           </View>
         }
       />
     </View>
   );
 }
+
+const s = StyleSheet.create({
+  center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 16, color: "#6b7280", textAlign: "center" },
+  loginBtn: { backgroundColor: "#16a34a", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 16 },
+  loginBtnText: { color: "white", fontWeight: "600" },
+  chatItem: { marginHorizontal: 16, marginBottom: 8, borderRadius: 16, padding: 16, backgroundColor: "white", borderWidth: 1, borderColor: "#f3f4f6", flexDirection: "row", alignItems: "center" },
+  chatItemUnread: { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" },
+  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", marginRight: 12 },
+  avatarBusco: { backgroundColor: "#fef3c7" },
+  avatarVendo: { backgroundColor: "#dcfce7" },
+  chatType: { fontSize: 11, color: "#9ca3af", fontWeight: "500", textTransform: "uppercase" },
+  chatTime: { fontSize: 11, color: "#9ca3af" },
+  chatMsg: { fontSize: 14, color: "#6b7280", marginTop: 2 },
+  chatMsgUnread: { fontWeight: "600", color: "#111827" },
+  dot: { width: 12, height: 12, backgroundColor: "#22c55e", borderRadius: 6, marginLeft: 8 },
+});
