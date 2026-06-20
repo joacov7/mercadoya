@@ -1,5 +1,4 @@
 import {
-  getFirestore,
   collection,
   doc,
   addDoc,
@@ -15,10 +14,10 @@ import {
   serverTimestamp,
   type QueryConstraint,
 } from "firebase/firestore";
-import { getFirebaseApp } from "./app";
+import { getDbInstance } from "./app";
 
 export function getDb() {
-  return getFirestore(getFirebaseApp());
+  return getDbInstance();
 }
 
 export const COLECCIONES = {

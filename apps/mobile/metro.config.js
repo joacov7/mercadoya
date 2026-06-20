@@ -19,7 +19,7 @@ config.resolver.nodeModulesPaths = [
 // instalación anterior en Windows), Metro lo ignora para estos paquetes y no
 // se mezclan versiones (causa del error "getDevServer is not a function").
 const rootModules = path.join(workspaceRoot, "node_modules");
-const forceSingle = ["react-native", "react"];
+const forceSingle = ["react-native", "react", "@firebase/app", "@firebase/component", "firebase"];
 const defaultResolveRequest = config.resolver.resolveRequest;
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
