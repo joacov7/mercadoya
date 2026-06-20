@@ -49,7 +49,7 @@ export default function ChatPage() {
   const [loadingAccion, setLoadingAccion] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const esComercio = usuario?.rol === "comercio";
+  const esComercio = !!usuario && !!chat && chat.comercioId === usuario.id;
   const primerMensaje = mensajes[0]?.texto ?? "";
   const necesitaEnvio = primerMensaje.includes("envío con cadete");
 

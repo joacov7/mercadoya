@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Badge, Button } from "@mercadovivo/ui";
 import type { PublicacionVendo } from "@mercadovivo/types";
 import { useAuth } from "@mercadovivo/hooks";
@@ -125,7 +125,9 @@ export function CardVendo({ publicacion }: Props) {
 
         {/* Contenido */}
         <div className="p-4 flex flex-col gap-2 flex-1">
-          <h3 className="font-semibold text-gray-900 text-base leading-tight line-clamp-2">{publicacion.titulo}</h3>
+          <Link to={`/vendo/${publicacion.id}`} className="font-semibold text-gray-900 text-base leading-tight line-clamp-2 hover:text-green-700 transition-colors">
+            {publicacion.titulo}
+          </Link>
           {publicacion.descripcion && (
             <p className="text-gray-400 text-sm line-clamp-2 flex-1">{publicacion.descripcion}</p>
           )}

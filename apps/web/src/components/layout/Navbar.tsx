@@ -24,7 +24,7 @@ export default function Navbar() {
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to={firebaseUser ? "/home" : "/"} className="flex items-center gap-2">
             <span className="text-2xl">🛒</span>
             <span className="font-bold text-green-700 text-lg">{APP_NAME}</span>
           </Link>

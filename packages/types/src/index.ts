@@ -19,6 +19,7 @@ export interface Usuario {
   email: string;
   rol: Rol;
   avatarUrl?: string;
+  descripcion?: string;
   createdAt: number;
   reputacion?: {
     positivos: number;
