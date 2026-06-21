@@ -13,6 +13,7 @@ export function usePublicacionesVendo(rubro?: Rubro) {
       const data = await listarVendo(rubro);
       setPublicaciones(data);
     } catch (e) {
+      console.error("Error cargando publicaciones:", e);
       setError(e as Error);
     } finally {
       setLoading(false);
@@ -35,6 +36,7 @@ export function usePublicacionesBusco(rubro?: Rubro) {
       const data = await listarBusco(rubro);
       setPublicaciones(data);
     } catch (e) {
+      console.error("Error cargando publicaciones:", e);
       setError(e as Error);
     } finally {
       setLoading(false);
