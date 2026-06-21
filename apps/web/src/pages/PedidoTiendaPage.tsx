@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
-import { suscribirPedidoTienda, actualizarEstadoPedidoTienda } from "@mercadovivo/core";
+import { suscribirPedidoTienda, actualizarEstadoPedidoTienda, obtenerUsuario } from "@mercadovivo/core";
 import { useAuth } from "@mercadovivo/hooks";
-import type { PedidoTienda } from "@mercadovivo/types";
+import type { PedidoTienda, Usuario } from "@mercadovivo/types";
 
 const LABEL_PAGO: Record<string, string> = {
   efectivo: "💵 Efectivo",
@@ -33,15 +33,36 @@ export default function PedidoTiendaPage() {
   const { pedidoId } = useParams<{ pedidoId: string }>();
   const { usuario } = useAuth();
   const [pedido, setPedido] = useState<PedidoTienda | null>(null);
+  const [comercio, setComercio] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(false);
+  const [notif, setNotif] = useState<string | null>(null);
+  const prevEstado = useRef<string | null>(null);
 
   const pedidoUrl = `${window.location.origin}/pedido-tienda/${pedidoId}`;
   const esCajero = !!usuario && !!pedido && usuario.id === pedido.comercioId;
 
   useEffect(() => {
     if (!pedidoId) return;
-    return suscribirPedidoTienda(pedidoId, setPedido);
+    return suscribirPedidoTienda(pedidoId, (p) => {
+      if (p && prevEstado.current && prevEstado.current !== p.estado) {
+        if (p.estado === "pago") setNotif("✅ ¡Tu pago fue confirmado!");
+        if (p.estado === "cancelado") setNotif("❌ Tu pedido fue cancelado.");
+      }
+      if (p) prevEstado.current = p.estado;
+      setPedido(p);
+    });
   }, [pedidoId]);
+
+  useEffect(() => {
+    if (!pedido) return;
+    obtenerUsuario(pedido.comercioId).then(setComercio);
+  }, [pedido?.comercioId]);
+
+  useEffect(() => {
+    if (!notif) return;
+    const t = setTimeout(() => setNotif(null), 6000);
+    return () => clearTimeout(t);
+  }, [notif]);
 
   const handleMarcarPago = async () => {
     if (!pedidoId) return;
@@ -61,6 +82,14 @@ export default function PedidoTiendaPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Notificación de cambio de estado */}
+      {notif && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-lg mx-auto bg-white border border-green-300 rounded-2xl shadow-xl px-5 py-4 flex items-center gap-3 animate-bounce-once">
+          <p className="font-semibold text-gray-900 flex-1">{notif}</p>
+          <button onClick={() => setNotif(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+        </div>
+      )}
+
       <div className="bg-white border-b px-4 py-4 shadow-sm">
         <h1 className="text-xl font-bold text-gray-900">Pedido #{pedidoId?.slice(-6).toUpperCase()}</h1>
       </div>
@@ -88,20 +117,20 @@ export default function PedidoTiendaPage() {
           {pedido.items.map((item) => (
             <div key={item.publicacionId} className="flex justify-between text-sm">
               <span className="text-gray-700">{item.titulo} × {item.cantidad}</span>
-              <span className="font-medium">${(item.precio * item.cantidad).toLocaleString()}</span>
+              <span className="font-medium">${(item.precio * item.cantidad).toLocaleString("es-AR")}</span>
             </div>
           ))}
           <div className="border-t pt-2 space-y-1">
             <div className="flex justify-between text-sm text-gray-500">
-              <span>Subtotal</span><span>${pedido.subtotal.toLocaleString()}</span>
+              <span>Subtotal</span><span>${pedido.subtotal.toLocaleString("es-AR")}</span>
             </div>
             {pedido.costoEnvio > 0 && (
               <div className="flex justify-between text-sm text-gray-500">
-                <span>Envío</span><span>${pedido.costoEnvio.toLocaleString()}</span>
+                <span>Envío</span><span>${pedido.costoEnvio.toLocaleString("es-AR")}</span>
               </div>
             )}
             <div className="flex justify-between font-bold text-green-700">
-              <span>Total</span><span>${pedido.total.toLocaleString()}</span>
+              <span>Total</span><span>${pedido.total.toLocaleString("es-AR")}</span>
             </div>
           </div>
         </div>
@@ -123,6 +152,24 @@ export default function PedidoTiendaPage() {
             </div>
           )}
         </div>
+
+        {/* Contacto del comercio — solo para el cliente */}
+        {!esCajero && comercio && (pedido.estado === "pendiente" || pedido.estado === "pago") && (
+          <div className="bg-white rounded-xl border p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-2">Contacto del comercio</p>
+            <p className="text-sm text-gray-800 font-medium">{comercio.nombre}</p>
+            {(comercio.whatsapp || comercio.telefono) && (
+              <a
+                href={`https://wa.me/${(comercio.whatsapp || comercio.telefono).replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 flex items-center gap-2 text-sm text-green-600 font-medium hover:underline"
+              >
+                <span>📱</span> WhatsApp {comercio.whatsapp || comercio.telefono}
+              </a>
+            )}
+          </div>
+        )}
 
         {/* Acciones cajero */}
         {esCajero && pedido.estado === "pendiente" && (

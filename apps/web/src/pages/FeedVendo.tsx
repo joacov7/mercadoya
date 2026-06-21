@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { usePublicacionesVendo } from "@mercadovivo/hooks";
 import { useAuth } from "@mercadovivo/hooks";
-import { type Rubro } from "@mercadovivo/config";
+import { type Rubro, RUBROS } from "@mercadovivo/config";
 import { Spinner, EmptyState, Button } from "@mercadovivo/ui";
 import { CardVendo } from "../components/feed/CardVendo";
 import { FiltroRubros } from "../components/feed/FiltroRubros";
@@ -11,7 +11,17 @@ import { FiltrosAvanzados, type Filtros } from "../components/feed/FiltrosAvanza
 
 export default function FeedVendo() {
   const { usuario } = useAuth();
-  const [rubroFiltro, setRubroFiltro] = useState<Rubro | undefined>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rubroParam = searchParams.get("rubro") as Rubro | null;
+  const [rubroFiltro, setRubroFiltro] = useState<Rubro | undefined>(
+    rubroParam && (RUBROS as readonly string[]).includes(rubroParam) ? rubroParam : undefined
+  );
+
+  const handleRubroChange = (r: Rubro | undefined) => {
+    setRubroFiltro(r);
+    if (r) setSearchParams({ rubro: r }, { replace: true });
+    else setSearchParams({}, { replace: true });
+  };
   const [busqueda, setBusqueda] = useState("");
   const [filtros, setFiltros] = useState<Filtros>({});
   const { publicaciones, loading } = usePublicacionesVendo(rubroFiltro);
@@ -48,7 +58,7 @@ export default function FeedVendo() {
       </div>
 
       <Buscador value={busqueda} onChange={setBusqueda} placeholder="Buscar productos..." />
-      <FiltroRubros selected={rubroFiltro} onChange={setRubroFiltro} />
+      <FiltroRubros selected={rubroFiltro} onChange={handleRubroChange} />
       <FiltrosAvanzados filtros={filtros} onChange={setFiltros} cantActivos={cantFiltrosActivos} />
 
       {loading && <div className="py-12"><Spinner /></div>}

@@ -10,6 +10,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   onSnapshot,
   serverTimestamp,
   type QueryConstraint,
@@ -42,6 +43,7 @@ export {
   query,
   where,
   orderBy,
+  limit,
   onSnapshot,
   serverTimestamp,
 };

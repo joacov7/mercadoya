@@ -102,7 +102,11 @@ export default function AdminPedidosPage() {
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                 <div>
                   <p className="font-bold text-gray-900 text-sm">#{p.id.slice(-6).toUpperCase()}</p>
-                  <p className="text-xs text-gray-400">{new Date(p.createdAt).toLocaleString("es-AR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}</p>
+                  {p.clienteNombre && <p className="text-sm font-medium text-gray-700">{p.clienteNombre}</p>}
+                  {p.clienteTelefono && (
+                    <a href={`tel:${p.clienteTelefono}`} className="text-xs text-green-600 hover:underline">📞 {p.clienteTelefono}</a>
+                  )}
+                  <p className="text-xs text-gray-400 mt-0.5">{new Date(p.createdAt).toLocaleString("es-AR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}</p>
                 </div>
                 <span className={`text-xs font-bold px-3 py-1 rounded-full border ${ESTADO_COLOR[p.estado]}`}>
                   {p.estado.charAt(0).toUpperCase() + p.estado.slice(1)}

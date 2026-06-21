@@ -8,6 +8,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   getDocs,
 } from "@mercadovivo/firebase";
 import type {
@@ -37,6 +38,7 @@ export async function listarVendo(
     orderBy("createdAt", "desc"),
   ];
   if (rubro) constraints.unshift(where("rubro", "==", rubro));
+  constraints.push(limit(100));
   const q = query(collection(getDb(), COLECCIONES.VENDO), ...constraints);
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as PublicacionVendo);
@@ -64,6 +66,7 @@ export async function listarBusco(
     orderBy("createdAt", "desc"),
   ];
   if (rubro) constraints.unshift(where("rubro", "==", rubro));
+  constraints.push(limit(100));
   const q = query(collection(getDb(), COLECCIONES.BUSCO), ...constraints);
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as PublicacionBusco);

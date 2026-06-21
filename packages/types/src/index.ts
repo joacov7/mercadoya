@@ -142,6 +142,8 @@ export interface PedidoTienda {
   id: string;
   comercioId: string;
   clienteId: string;
+  clienteNombre?: string;
+  clienteTelefono?: string;
   items: ItemCarrito[];
   metodoPago: MetodoPago;
   metodoEnvio: MetodoEnvio;

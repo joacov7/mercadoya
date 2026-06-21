@@ -51,6 +51,8 @@ export default function CheckoutPage() {
       const pedidoId = await crearPedidoTienda({
         comercioId,
         clienteId: usuario.id,
+        clienteNombre: usuario.nombre,
+        clienteTelefono: usuario.telefono,
         items,
         metodoPago,
         metodoEnvio,
