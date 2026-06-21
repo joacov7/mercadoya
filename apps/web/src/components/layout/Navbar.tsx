@@ -34,8 +34,10 @@ export default function Navbar() {
             <NavLink to="/busco" className={linkClass}>Busco</NavLink>
             {firebaseUser && (
               <>
-                <NavLink to="/publicar" className={linkClass}>Publicar</NavLink>
                 <NavLink to="/mis-publicaciones" className={linkClass}>Mis publicaciones</NavLink>
+                {(usuario?.rol === "comercio" || usuario?.rol === "admin") && (
+                  <NavLink to="/admin/tienda" className={linkClass}>Mi tienda</NavLink>
+                )}
                 <NavLink to="/chats" className={({ isActive }) =>
                   `relative px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive ? "bg-green-100 text-green-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
