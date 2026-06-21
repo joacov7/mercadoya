@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@mercadovivo/hooks";
-import { crearChat, enviarMensaje, obtenerUsuario } from "@mercadovivo/core";
+import { obtenerUsuario } from "@mercadovivo/core";
 import { getDb, COLECCIONES, doc, getDoc } from "@mercadovivo/firebase";
 import type { PublicacionVendo, Usuario } from "@mercadovivo/types";
-import { Spinner, Button, Badge } from "@mercadovivo/ui";
+import { Spinner, Badge } from "@mercadovivo/ui";
+import { useCarrito } from "../context/CarritoContext";
 
 export default function DetalleVendo() {
   const { id } = useParams<{ id: string }>();
@@ -13,8 +14,9 @@ export default function DetalleVendo() {
   const [pub, setPub] = useState<PublicacionVendo | null>(null);
   const [comercio, setComercio] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
-  const [modalidad, setModalidad] = useState<"retiro" | "envio" | null>(null);
-  const [loadingChat, setLoadingChat] = useState(false);
+  const [cantidad, setCantidad] = useState(1);
+  const [agregado, setAgregado] = useState(false);
+  const { agregar } = useCarrito();
 
   useEffect(() => {
     if (!id) return;
@@ -28,25 +30,12 @@ export default function DetalleVendo() {
     });
   }, [id]);
 
-  const handleContactar = async () => {
+  const handleAgregar = () => {
     if (!usuario) { navigate("/login"); return; }
-    if (!pub || !modalidad) return;
-    setLoadingChat(true);
-    try {
-      const chatId = await crearChat({
-        clienteId: usuario.id,
-        comercioId: pub.comercioId,
-        publicacionRelacionada: pub.id,
-        tipo: "vendo",
-      });
-      const texto = modalidad === "retiro"
-        ? `Hola! Me interesa "${pub.titulo}" — $${pub.precio.toLocaleString("es-AR")}. Paso a retirarlo en el local.`
-        : `Hola! Me interesa "${pub.titulo}" — $${pub.precio.toLocaleString("es-AR")}. Necesito envío con cadete.`;
-      await enviarMensaje(chatId, usuario.id, texto);
-      navigate(`/chat/${chatId}`);
-    } finally {
-      setLoadingChat(false);
-    }
+    if (!pub) return;
+    agregar({ publicacionId: pub.id, titulo: pub.titulo, precio: pub.precio, imagenUrl: pub.imagenes?.[0] }, cantidad, pub.comercioId);
+    setAgregado(true);
+    setTimeout(() => setAgregado(false), 2000);
   };
 
   if (loading) return <div className="py-20 flex justify-center"><Spinner /></div>;
@@ -118,36 +107,21 @@ export default function DetalleVendo() {
         {/* Acción */}
         {!esPropietario && pub.stockDisponible && (
           <div className="flex flex-col gap-3 pt-2">
-            <p className="text-sm font-medium text-gray-700 text-center">¿Cómo querés recibirlo?</p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setModalidad("retiro")}
-                className={`w-full py-3 rounded-2xl border-2 text-sm font-semibold transition-colors ${
-                  modalidad === "retiro" ? "border-green-500 bg-green-50 text-green-700" : "border-gray-200 bg-white text-gray-700"
-                }`}
-              >
-                🏪 Retiro en local
-              </button>
-              {pub.envioDisponible && (
-                <button
-                  onClick={() => setModalidad("envio")}
-                  className={`w-full py-3 rounded-2xl border-2 text-sm font-semibold transition-colors ${
-                    modalidad === "envio" ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 bg-white text-gray-700"
-                  }`}
-                >
-                  🛵 Envío con cadete
-                </button>
-              )}
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-700">Cantidad</p>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setCantidad((c) => Math.max(1, c - 1))} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-red-300 hover:text-red-500 font-bold text-lg">−</button>
+                <span className="text-lg font-bold w-6 text-center">{cantidad}</span>
+                <button onClick={() => setCantidad((c) => Math.min(pub.stock, c + 1))} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-green-500 hover:text-green-600 font-bold text-lg">+</button>
+              </div>
             </div>
-            <Button
-              size="lg"
-              className="w-full"
-              disabled={!modalidad}
-              loading={loadingChat}
-              onClick={handleContactar}
-            >
-              💬 Contactar al vendedor
-            </Button>
+            <div className="flex justify-between items-center text-sm text-gray-500">
+              <span>Total</span>
+              <span className="text-xl font-extrabold text-green-700">${(pub.precio * cantidad).toLocaleString("es-AR")}</span>
+            </div>
+            <button onClick={handleAgregar} className={`w-full py-3.5 rounded-2xl font-bold text-base transition-colors ${agregado ? "bg-green-100 text-green-700" : "bg-green-600 text-white hover:bg-green-700"}`}>
+              {agregado ? "✅ Agregado al carrito" : "🛒 Agregar al carrito"}
+            </button>
           </div>
         )}
 

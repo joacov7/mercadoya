@@ -22,6 +22,8 @@ import TiendaPage from "./pages/TiendaPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import PedidoTiendaPage from "./pages/PedidoTiendaPage";
 import AdminTiendaPage from "./pages/AdminTiendaPage";
+import AdminPedidosPage from "./pages/AdminPedidosPage";
+import MisPedidosPage from "./pages/MisPedidosPage";
 import { CarritoProvider } from "./context/CarritoContext";
 import { Spinner } from "@mercadovivo/ui";
 
@@ -63,6 +65,8 @@ export default function App() {
           <Route path="/chat/:chatId" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
           <Route path="/perfil" element={<PrivateRoute><PerfilPage /></PrivateRoute>} />
           <Route path="/admin/tienda" element={<PrivateRoute><AdminTiendaPage /></PrivateRoute>} />
+          <Route path="/admin/pedidos" element={<PrivateRoute><AdminPedidosPage /></PrivateRoute>} />
+          <Route path="/mis-pedidos" element={<PrivateRoute><MisPedidosPage /></PrivateRoute>} />
         </Route>
       </Routes>
     </CarritoProvider>

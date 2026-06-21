@@ -44,7 +44,13 @@ export default function Navbar() {
                 <>
                   <NavLink to="/mis-publicaciones" className={({ isActive }) => `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive ? "bg-green-100 text-green-700" : "text-gray-600 hover:bg-gray-100"}`}>Mis publicaciones</NavLink>
                   {(usuario?.rol === "comercio" || usuario?.rol === "admin") && (
-                    <NavLink to="/admin/tienda" className={({ isActive }) => `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive ? "bg-green-100 text-green-700" : "text-gray-600 hover:bg-gray-100"}`}>Mi tienda</NavLink>
+                    <>
+                      <NavLink to="/admin/pedidos" className={({ isActive }) => `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive ? "bg-green-100 text-green-700" : "text-gray-600 hover:bg-gray-100"}`}>Pedidos</NavLink>
+                      <NavLink to="/admin/tienda" className={({ isActive }) => `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive ? "bg-green-100 text-green-700" : "text-gray-600 hover:bg-gray-100"}`}>Mi tienda</NavLink>
+                    </>
+                  )}
+                  {usuario?.rol !== "comercio" && usuario?.rol !== "admin" && (
+                    <NavLink to="/mis-pedidos" className={({ isActive }) => `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive ? "bg-green-100 text-green-700" : "text-gray-600 hover:bg-gray-100"}`}>Mis pedidos</NavLink>
                   )}
                   <NavLink to="/chats" className={({ isActive }) => `relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isActive ? "bg-green-100 text-green-700" : "text-gray-600 hover:bg-gray-100"}`}>
                     Chats
