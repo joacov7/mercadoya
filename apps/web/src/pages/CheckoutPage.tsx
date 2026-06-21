@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCarrito } from "../context/CarritoContext";
 import { useAuth } from "@mercadovivo/hooks";
-import { obtenerConfigTienda, crearPedidoTienda } from "@mercadovivo/core";
-import type { ConfigTienda, MetodoPago, MetodoEnvio } from "@mercadovivo/types";
+import { obtenerConfigTienda, crearPedidoTienda, obtenerUsuario } from "@mercadovivo/core";
+import type { ConfigTienda, MetodoPago, MetodoEnvio, Usuario } from "@mercadovivo/types";
 
 const LABEL_PAGO: Record<MetodoPago, string> = {
   efectivo: "💵 Efectivo",
@@ -17,53 +17,102 @@ const LABEL_ENVIO: Record<MetodoEnvio, string> = {
   delivery: "🛵 Delivery a domicilio",
 };
 
+interface ComercioInfo {
+  config: ConfigTienda | null;
+  usuario: Usuario | null;
+}
+
 export default function CheckoutPage() {
-  const { items, subtotal, comercioId, vaciar, cambiarCantidad, quitar } = useCarrito();
+  const { items, porComercio, comerciosIds, subtotal, vaciar, cambiarCantidad, quitar } = useCarrito();
   const { usuario } = useAuth();
   const navigate = useNavigate();
-  const [config, setConfig] = useState<ConfigTienda | null>(null);
+
+  const [infoComercios, setInfoComercios] = useState<Record<string, ComercioInfo>>({});
   const [metodoPago, setMetodoPago] = useState<MetodoPago | null>(null);
-  const [metodoEnvio, setMetodoEnvio] = useState<MetodoEnvio | null>(null);
-  const [direccion, setDireccion] = useState("");
+  const [metodosEnvio, setMetodosEnvio] = useState<Record<string, MetodoEnvio>>({});
+  const [direcciones, setDirecciones] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!comercioId) { navigate("/"); return; }
-    obtenerConfigTienda(comercioId).then((cfg) => {
-      setConfig(cfg);
-      if (cfg?.metodosPago?.length) setMetodoPago(cfg.metodosPago[0]);
-      if (cfg?.metodosEnvio?.length) setMetodoEnvio(cfg.metodosEnvio[0]);
+    if (comerciosIds.length === 0) { navigate("/"); return; }
+    Promise.all(
+      comerciosIds.map(async (cid) => {
+        const [config, usr] = await Promise.all([obtenerConfigTienda(cid), obtenerUsuario(cid)]);
+        return [cid, { config, usuario: usr }] as [string, ComercioInfo];
+      })
+    ).then((entries) => {
+      const info = Object.fromEntries(entries);
+      setInfoComercios(info);
+      // Default: primer método de pago disponible (intersección)
+      const primerConfig = entries[0]?.[1].config;
+      if (primerConfig?.metodosPago?.length) setMetodoPago(primerConfig.metodosPago[0]);
+      // Default envío por comercio
+      const defaults: Record<string, MetodoEnvio> = {};
+      for (const [cid, { config: cfg }] of entries) {
+        if (cfg?.metodosEnvio?.length) defaults[cid] = cfg.metodosEnvio[0];
+      }
+      setMetodosEnvio(defaults);
     });
-  }, [comercioId]);
+  }, [comerciosIds.join(",")]);
 
   if (items.length === 0) { navigate("/"); return null; }
 
-  const recargo = metodoPago && config?.recargosPago ? (config.recargosPago[metodoPago] ?? 0) : 0;
-  const costoEnvio = metodoEnvio === "delivery" ? (config?.costoDelivery ?? 0) : 0;
-  const montoConRecargo = subtotal * (1 + recargo / 100);
-  const total = montoConRecargo + costoEnvio;
+  // Métodos de pago disponibles: intersección de todos los comercios en carrito
+  const metodosDisponibles: MetodoPago[] = (() => {
+    const todos = comerciosIds.map((cid) => infoComercios[cid]?.config?.metodosPago ?? []);
+    if (todos.length === 0) return [];
+    return todos.reduce((acc, m) => acc.filter((x) => m.includes(x)));
+  })();
+
+  const calcularTotalComercio = (cid: string) => {
+    const its = porComercio[cid] ?? [];
+    const sub = its.reduce((s, i) => s + i.precio * i.cantidad, 0);
+    const cfg = infoComercios[cid]?.config;
+    const recargo = metodoPago && cfg?.recargosPago ? (cfg.recargosPago[metodoPago] ?? 0) : 0;
+    const envio = metodosEnvio[cid] === "delivery" ? (cfg?.costoDelivery ?? 0) : 0;
+    return { sub, recargo, envio, total: Math.round(sub * (1 + recargo / 100) + envio) };
+  };
+
+  const totalGeneral = comerciosIds.reduce((s, cid) => s + calcularTotalComercio(cid).total, 0);
 
   const handleConfirmar = async () => {
-    if (!metodoPago || !metodoEnvio || !usuario || !comercioId) return;
-    if (metodoEnvio === "delivery" && !direccion.trim()) { alert("Ingresá una dirección de entrega."); return; }
+    if (!metodoPago || !usuario) return;
+    for (const cid of comerciosIds) {
+      const envio = metodosEnvio[cid];
+      if (!envio) { alert(`Seleccioná método de entrega para todos los comercios.`); return; }
+      if (envio === "delivery" && !direcciones[cid]?.trim()) {
+        alert(`Ingresá una dirección de entrega para ${infoComercios[cid]?.usuario?.nombre ?? "un comercio"}.`);
+        return;
+      }
+    }
     setLoading(true);
     try {
-      const pedidoId = await crearPedidoTienda({
-        comercioId,
-        clienteId: usuario.id,
-        clienteNombre: usuario.nombre,
-        clienteTelefono: usuario.telefono,
-        items,
-        metodoPago,
-        metodoEnvio,
-        direccionEntrega: metodoEnvio === "delivery" ? direccion : undefined,
-        subtotal,
-        costoEnvio,
-        total: Math.round(total),
-        estado: "pendiente",
-      });
+      const pedidoIds: string[] = [];
+      for (const cid of comerciosIds) {
+        const its = porComercio[cid];
+        const { sub, envio, total } = calcularTotalComercio(cid);
+        const pid = await crearPedidoTienda({
+          comercioId: cid,
+          clienteId: usuario.id,
+          clienteNombre: usuario.nombre,
+          clienteTelefono: usuario.telefono,
+          items: its,
+          metodoPago,
+          metodoEnvio: metodosEnvio[cid],
+          direccionEntrega: metodosEnvio[cid] === "delivery" ? direcciones[cid] : undefined,
+          subtotal: sub,
+          costoEnvio: envio,
+          total,
+          estado: "pendiente",
+        });
+        pedidoIds.push(pid);
+      }
       vaciar();
-      navigate(`/pedido-tienda/${pedidoId}`);
+      if (pedidoIds.length === 1) {
+        navigate(`/pedido-tienda/${pedidoIds[0]}`);
+      } else {
+        navigate(`/mis-pedidos`);
+      }
     } finally {
       setLoading(false);
     }
@@ -74,118 +123,115 @@ export default function CheckoutPage() {
       <div className="bg-white border-b px-4 py-4 sticky top-0 z-10 shadow-sm flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-gray-700 text-xl">←</button>
         <h1 className="text-xl font-bold text-gray-900">Tu carrito</h1>
+        {comerciosIds.length > 1 && (
+          <span className="ml-auto text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">{comerciosIds.length} comercios</span>
+        )}
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-5 space-y-4 pb-32">
-        {/* Items */}
-        <div className="bg-white rounded-2xl border divide-y">
-          {items.map((item) => (
-            <div key={item.publicacionId} className="flex items-center gap-3 p-4">
-              {item.imagenUrl ? (
-                <img src={item.imagenUrl} alt={item.titulo} className="w-16 h-16 object-cover rounded-xl flex-shrink-0" />
-              ) : (
-                <div className="w-16 h-16 bg-green-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🛍️</div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 text-sm leading-tight">{item.titulo}</p>
-                <p className="text-green-700 font-bold mt-0.5">${item.precio.toLocaleString("es-AR")}</p>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <button onClick={() => cambiarCantidad(item.publicacionId, item.cantidad - 1)} className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-red-300 hover:text-red-500 font-bold">−</button>
-                  <span className="text-sm font-semibold w-4 text-center">{item.cantidad}</span>
-                  <button onClick={() => cambiarCantidad(item.publicacionId, item.cantidad + 1)} className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-green-500 hover:text-green-600 font-bold">+</button>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <p className="font-bold text-gray-900">${(item.precio * item.cantidad).toLocaleString("es-AR")}</p>
-                <button onClick={() => quitar(item.publicacionId)} className="text-xs text-red-400 hover:text-red-600">Quitar</button>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="max-w-lg mx-auto px-4 py-5 space-y-5 pb-36">
+        {/* Un bloque por comercio */}
+        {comerciosIds.map((cid) => {
+          const info = infoComercios[cid];
+          const its = porComercio[cid] ?? [];
+          const { sub, recargo, envio, total } = calcularTotalComercio(cid);
+          const cfg = info?.config;
 
-        {/* Método de envío */}
-        {config && (
-          <div className="bg-white rounded-2xl border p-4">
-            <h2 className="font-semibold text-gray-800 mb-3">Entrega</h2>
-            <div className="space-y-2">
-              {config.metodosEnvio.map((m) => (
-                <button key={m} onClick={() => setMetodoEnvio(m)}
-                  className={`w-full p-3 rounded-xl border-2 text-left transition-colors ${metodoEnvio === m ? "border-green-600 bg-green-50" : "border-gray-200 hover:border-gray-300"}`}>
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{LABEL_ENVIO[m]}</span>
-                    {m === "delivery" && (
-                      <span className="text-sm font-bold text-gray-700">
-                        {config.costoDelivery > 0 ? `+$${config.costoDelivery.toLocaleString("es-AR")}` : "Gratis"}
-                      </span>
+          return (
+            <div key={cid} className="bg-white rounded-2xl border overflow-hidden">
+              {/* Header comercio */}
+              <div className="px-4 py-3 bg-gray-50 border-b flex items-center gap-2">
+                <span className="text-lg">🏪</span>
+                <p className="font-semibold text-gray-800 text-sm">{info?.usuario?.nombre ?? "Cargando..."}</p>
+              </div>
+
+              {/* Items */}
+              <div className="divide-y">
+                {its.map((item) => (
+                  <div key={item.publicacionId} className="flex items-center gap-3 p-4">
+                    {item.imagenUrl ? (
+                      <img src={item.imagenUrl} alt={item.titulo} className="w-14 h-14 object-cover rounded-xl flex-shrink-0" />
+                    ) : (
+                      <div className="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🛍️</div>
                     )}
-                    {m === "retiro" && <span className="text-sm text-green-600 font-medium">Gratis</span>}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 text-sm leading-tight">{item.titulo}</p>
+                      <p className="text-green-700 font-bold text-sm">${item.precio.toLocaleString("es-AR")}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <button onClick={() => cambiarCantidad(item.publicacionId, item.cantidad - 1)} className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm">−</button>
+                        <span className="text-sm font-semibold w-4 text-center">{item.cantidad}</span>
+                        <button onClick={() => cambiarCantidad(item.publicacionId, item.cantidad + 1)} className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm">+</button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <p className="font-bold text-gray-900 text-sm">${(item.precio * item.cantidad).toLocaleString("es-AR")}</p>
+                      <button onClick={() => quitar(item.publicacionId)} className="text-xs text-red-400 hover:text-red-600">Quitar</button>
+                    </div>
                   </div>
-                  {m === "delivery" && config.zonaDelivery && (
-                    <p className="text-xs text-gray-400 mt-0.5">{config.zonaDelivery}</p>
-                  )}
-                </button>
-              ))}
-            </div>
-            {metodoEnvio === "delivery" && (
-              <input value={direccion} onChange={(e) => setDireccion(e.target.value)}
-                placeholder="Dirección de entrega"
-                className="mt-3 w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-            )}
-          </div>
-        )}
+                ))}
+              </div>
 
-        {/* Método de pago */}
-        {config && (
+              {/* Entrega */}
+              {cfg && (
+                <div className="px-4 py-3 border-t bg-gray-50">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Entrega</p>
+                  <div className="flex gap-2">
+                    {cfg.metodosEnvio.map((m) => (
+                      <button key={m} onClick={() => setMetodosEnvio((prev) => ({ ...prev, [cid]: m }))}
+                        className={`flex-1 py-2 rounded-xl border text-xs font-medium transition-colors ${metodosEnvio[cid] === m ? "border-green-600 bg-green-50 text-green-700" : "border-gray-200 text-gray-600"}`}>
+                        {m === "retiro" ? "🏪 Retiro" : `🛵 Delivery${cfg.costoDelivery > 0 ? ` +$${cfg.costoDelivery.toLocaleString("es-AR")}` : " gratis"}`}
+                      </button>
+                    ))}
+                  </div>
+                  {metodosEnvio[cid] === "delivery" && (
+                    <input value={direcciones[cid] ?? ""} onChange={(e) => setDirecciones((prev) => ({ ...prev, [cid]: e.target.value }))}
+                      placeholder="Dirección de entrega"
+                      className="mt-2 w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                  )}
+                </div>
+              )}
+
+              {/* Subtotal por comercio */}
+              <div className="px-4 py-3 border-t flex justify-between items-center">
+                <div className="text-xs text-gray-500 space-y-0.5">
+                  <p>Subtotal: ${sub.toLocaleString("es-AR")}</p>
+                  {recargo !== 0 && <p className={recargo > 0 ? "text-red-500" : "text-green-600"}>{recargo > 0 ? `+${recargo}%` : `${recargo}%`} por método de pago</p>}
+                  {envio > 0 && <p>Envío: +${envio.toLocaleString("es-AR")}</p>}
+                </div>
+                <p className="font-bold text-green-700">${total.toLocaleString("es-AR")}</p>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Método de pago global */}
+        {metodosDisponibles.length > 0 && (
           <div className="bg-white rounded-2xl border p-4">
             <h2 className="font-semibold text-gray-800 mb-3">Método de pago</h2>
             <div className="grid grid-cols-2 gap-2">
-              {config.metodosPago.map((m) => {
-                const r = config.recargosPago?.[m] ?? 0;
-                return (
-                  <button key={m} onClick={() => setMetodoPago(m)}
-                    className={`p-3 rounded-xl border-2 text-left transition-colors ${metodoPago === m ? "border-green-600 bg-green-50" : "border-gray-200 hover:border-gray-300"}`}>
-                    <p className="text-sm font-medium">{LABEL_PAGO[m]}</p>
-                    {r !== 0 && (
-                      <p className={`text-xs mt-0.5 font-semibold ${r > 0 ? "text-red-500" : "text-green-600"}`}>
-                        {r > 0 ? `+${r}% recargo` : `${Math.abs(r)}% descuento`}
-                      </p>
-                    )}
-                    {r === 0 && <p className="text-xs mt-0.5 text-gray-400">Sin recargo</p>}
-                  </button>
-                );
-              })}
+              {metodosDisponibles.map((m) => (
+                <button key={m} onClick={() => setMetodoPago(m)}
+                  className={`p-3 rounded-xl border-2 text-left transition-colors ${metodoPago === m ? "border-green-600 bg-green-50" : "border-gray-200"}`}>
+                  <p className="text-sm font-medium">{LABEL_PAGO[m]}</p>
+                </button>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Resumen */}
-        <div className="bg-white rounded-2xl border p-4 space-y-2">
-          <h2 className="font-semibold text-gray-800 mb-1">Resumen</h2>
-          <div className="flex justify-between text-sm text-gray-500">
-            <span>Subtotal</span><span>${subtotal.toLocaleString("es-AR")}</span>
+        {/* Total general */}
+        {comerciosIds.length > 1 && (
+          <div className="bg-white rounded-2xl border p-4 flex justify-between items-center">
+            <span className="text-gray-600 font-medium">Total general</span>
+            <span className="text-2xl font-extrabold text-green-700">${totalGeneral.toLocaleString("es-AR")}</span>
           </div>
-          {recargo !== 0 && (
-            <div className={`flex justify-between text-sm ${recargo > 0 ? "text-red-500" : "text-green-600"}`}>
-              <span>{recargo > 0 ? `Recargo ${metodoPago}` : `Descuento ${metodoPago}`} ({recargo > 0 ? "+" : ""}{recargo}%)</span>
-              <span>{recargo > 0 ? "+" : ""}${Math.round(subtotal * recargo / 100).toLocaleString("es-AR")}</span>
-            </div>
-          )}
-          {costoEnvio > 0 && (
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>Envío</span><span>+${costoEnvio.toLocaleString("es-AR")}</span>
-            </div>
-          )}
-          <div className="flex justify-between font-bold text-green-700 text-lg pt-2 border-t">
-            <span>Total</span><span>${Math.round(total).toLocaleString("es-AR")}</span>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Botón fijo abajo */}
+      {/* Botón fijo */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
-        <button onClick={handleConfirmar} disabled={!metodoPago || !metodoEnvio || loading}
+        <button onClick={handleConfirmar} disabled={!metodoPago || loading || comerciosIds.some((cid) => !metodosEnvio[cid])}
           className="w-full max-w-lg mx-auto block bg-green-600 text-white py-4 rounded-2xl font-bold text-base hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
-          {loading ? "Procesando..." : `Confirmar pedido · $${Math.round(total).toLocaleString("es-AR")}`}
+          {loading ? "Procesando..." : `Confirmar ${comerciosIds.length > 1 ? `${comerciosIds.length} pedidos` : "pedido"} · $${totalGeneral.toLocaleString("es-AR")}`}
         </button>
       </div>
     </div>

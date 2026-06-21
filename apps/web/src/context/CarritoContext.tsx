@@ -1,42 +1,33 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 import type { ItemCarrito } from "@mercadovivo/types";
 
 interface CarritoCtx {
   items: ItemCarrito[];
-  comercioId: string | null;
-  agregar: (item: Omit<ItemCarrito, "cantidad">, cantidad: number, comercioId: string) => void;
+  agregar: (item: Omit<ItemCarrito, "cantidad">, cantidad: number) => void;
   quitar: (publicacionId: string) => void;
   cambiarCantidad: (publicacionId: string, cantidad: number) => void;
   vaciar: () => void;
   subtotal: number;
   totalItems: number;
+  porComercio: Record<string, ItemCarrito[]>;
+  comerciosIds: string[];
 }
 
 const Ctx = createContext<CarritoCtx | null>(null);
 
 export function CarritoProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<ItemCarrito[]>([]);
-  const [comercioId, setComercioId] = useState<string | null>(null);
 
-  const agregar = useCallback((item: Omit<ItemCarrito, "cantidad">, cantidad: number, cid: string) => {
-    if (comercioId && comercioId !== cid) {
-      if (!confirm("Tenés productos de otro comercio en el carrito. ¿Vaciarlo y empezar de nuevo?")) return;
-      setItems([]);
-    }
-    setComercioId(cid);
+  const agregar = useCallback((item: Omit<ItemCarrito, "cantidad">, cantidad: number) => {
     setItems((prev) => {
       const existe = prev.find((i) => i.publicacionId === item.publicacionId);
       if (existe) return prev.map((i) => i.publicacionId === item.publicacionId ? { ...i, cantidad: i.cantidad + cantidad } : i);
       return [...prev, { ...item, cantidad }];
     });
-  }, [comercioId]);
+  }, []);
 
   const quitar = useCallback((id: string) => {
-    setItems((prev) => {
-      const nuevo = prev.filter((i) => i.publicacionId !== id);
-      if (nuevo.length === 0) setComercioId(null);
-      return nuevo;
-    });
+    setItems((prev) => prev.filter((i) => i.publicacionId !== id));
   }, []);
 
   const cambiarCantidad = useCallback((id: string, cantidad: number) => {
@@ -44,13 +35,23 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => prev.map((i) => i.publicacionId === id ? { ...i, cantidad } : i));
   }, [quitar]);
 
-  const vaciar = useCallback(() => { setItems([]); setComercioId(null); }, []);
+  const vaciar = useCallback(() => setItems([]), []);
 
   const subtotal = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
   const totalItems = items.reduce((s, i) => s + i.cantidad, 0);
 
+  const porComercio = useMemo(() => {
+    return items.reduce<Record<string, ItemCarrito[]>>((acc, item) => {
+      if (!acc[item.comercioId]) acc[item.comercioId] = [];
+      acc[item.comercioId].push(item);
+      return acc;
+    }, {});
+  }, [items]);
+
+  const comerciosIds = useMemo(() => Object.keys(porComercio), [porComercio]);
+
   return (
-    <Ctx.Provider value={{ items, comercioId, agregar, quitar, cambiarCantidad, vaciar, subtotal, totalItems }}>
+    <Ctx.Provider value={{ items, agregar, quitar, cambiarCantidad, vaciar, subtotal, totalItems, porComercio, comerciosIds }}>
       {children}
     </Ctx.Provider>
   );

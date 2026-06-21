@@ -12,9 +12,8 @@ function ModalComprar({ publicacion, onClose }: { publicacion: PublicacionVendo;
 
   const handleAgregar = () => {
     agregar(
-      { publicacionId: publicacion.id, titulo: publicacion.titulo, precio: publicacion.precio, imagenUrl: publicacion.imagenes?.[0] },
+      { publicacionId: publicacion.id, comercioId: publicacion.comercioId, titulo: publicacion.titulo, precio: publicacion.precio, imagenUrl: publicacion.imagenes?.[0] },
       cantidad,
-      publicacion.comercioId
     );
     onClose();
   };

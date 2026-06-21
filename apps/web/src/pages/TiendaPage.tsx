@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { listarProductosTienda, obtenerConfigTienda } from "@mercadovivo/core";
-import { obtenerUsuario } from "@mercadovivo/core";
+import { listarProductosTienda, obtenerConfigTienda, obtenerUsuario } from "@mercadovivo/core";
 import { useCarrito } from "../context/CarritoContext";
 import type { PublicacionVendo, ConfigTienda, Usuario } from "@mercadovivo/types";
 
 export default function TiendaPage() {
   const { comercioId } = useParams<{ comercioId: string }>();
   const navigate = useNavigate();
-  const { agregar, items, total } = useCarrito();
+  const { agregar, cambiarCantidad, items, subtotal, totalItems } = useCarrito();
   const [productos, setProductos] = useState<PublicacionVendo[]>([]);
   const [config, setConfig] = useState<ConfigTienda | null>(null);
   const [comercio, setComercio] = useState<Usuario | null>(null);
@@ -37,7 +36,7 @@ export default function TiendaPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b px-4 py-4 sticky top-0 z-10 shadow-sm">
         <h1 className="text-xl font-bold text-gray-900">{comercio?.nombre ?? "Tienda"}</h1>
-        <p className="text-sm text-gray-500">{comercio?.descripcion ?? ""}</p>
+        {comercio?.descripcion && <p className="text-sm text-gray-500">{comercio.descripcion}</p>}
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
@@ -49,27 +48,29 @@ export default function TiendaPage() {
               const cant = cantidadItem(p.id);
               return (
                 <div key={p.id} className="bg-white rounded-xl shadow-sm border flex gap-4 p-4">
-                  {p.imagenes?.[0] && (
+                  {p.imagenes?.[0] ? (
                     <img src={p.imagenes[0]} alt={p.titulo} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+                  ) : (
+                    <div className="w-20 h-20 bg-green-50 rounded-lg flex items-center justify-center text-3xl flex-shrink-0">🛍️</div>
                   )}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 truncate">{p.titulo}</h3>
-                    <p className="text-sm text-gray-500 line-clamp-2">{p.descripcion}</p>
-                    <p className="text-green-700 font-bold mt-1">${p.precio.toLocaleString()}</p>
+                    {p.descripcion && <p className="text-sm text-gray-500 line-clamp-2">{p.descripcion}</p>}
+                    <p className="text-green-700 font-bold mt-1">${p.precio.toLocaleString("es-AR")}</p>
                   </div>
                   <div className="flex flex-col items-center justify-center gap-2 flex-shrink-0">
                     {cant === 0 ? (
                       <button
-                        onClick={() => agregar({ publicacionId: p.id, titulo: p.titulo, precio: p.precio, cantidad: 1, imagenUrl: p.imagenes?.[0] }, comercioId!)}
+                        onClick={() => agregar({ publicacionId: p.id, comercioId: comercioId!, titulo: p.titulo, precio: p.precio, imagenUrl: p.imagenes?.[0] }, 1)}
                         className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700"
                       >
                         Agregar
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <button onClick={() => agregar({ publicacionId: p.id, titulo: p.titulo, precio: p.precio, cantidad: 1, imagenUrl: p.imagenes?.[0] }, comercioId!)} className="w-7 h-7 rounded-full bg-green-100 text-green-700 font-bold flex items-center justify-center hover:bg-green-200">+</button>
+                        <button onClick={() => cambiarCantidad(p.id, cant + 1)} className="w-7 h-7 rounded-full bg-green-100 text-green-700 font-bold flex items-center justify-center hover:bg-green-200">+</button>
                         <span className="font-semibold w-4 text-center">{cant}</span>
-                        <button onClick={() => { const i = items.find(i => i.publicacionId === p.id); if (i) agregar({...i, cantidad: -1}, comercioId!); }} className="w-7 h-7 rounded-full bg-gray-100 text-gray-700 font-bold flex items-center justify-center hover:bg-gray-200">−</button>
+                        <button onClick={() => cambiarCantidad(p.id, cant - 1)} className="w-7 h-7 rounded-full bg-gray-100 text-gray-700 font-bold flex items-center justify-center hover:bg-gray-200">−</button>
                       </div>
                     )}
                   </div>
@@ -80,15 +81,15 @@ export default function TiendaPage() {
         )}
       </div>
 
-      {items.length > 0 && (
+      {totalItems > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg">
           <button
-            onClick={() => navigate(`/checkout`)}
+            onClick={() => navigate("/checkout")}
             className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-between px-4 hover:bg-green-700"
           >
-            <span className="bg-white text-green-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">{items.reduce((s, i) => s + i.cantidad, 0)}</span>
+            <span className="bg-white text-green-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">{totalItems}</span>
             <span>Ver carrito</span>
-            <span>${total.toLocaleString()}</span>
+            <span>${subtotal.toLocaleString("es-AR")}</span>
           </button>
         </div>
       )}

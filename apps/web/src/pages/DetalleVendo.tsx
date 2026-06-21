@@ -33,7 +33,7 @@ export default function DetalleVendo() {
   const handleAgregar = () => {
     if (!usuario) { navigate("/login"); return; }
     if (!pub) return;
-    agregar({ publicacionId: pub.id, titulo: pub.titulo, precio: pub.precio, imagenUrl: pub.imagenes?.[0] }, cantidad, pub.comercioId);
+    agregar({ publicacionId: pub.id, comercioId: pub.comercioId, titulo: pub.titulo, precio: pub.precio, imagenUrl: pub.imagenes?.[0] }, cantidad);
     setAgregado(true);
     setTimeout(() => setAgregado(false), 2000);
   };

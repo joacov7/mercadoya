@@ -132,6 +132,7 @@ export interface ConfigTienda {
 
 export interface ItemCarrito {
   publicacionId: string;
+  comercioId: string;
   titulo: string;
   precio: number;
   cantidad: number;
