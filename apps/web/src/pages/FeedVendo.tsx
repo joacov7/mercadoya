@@ -13,16 +13,19 @@ export default function FeedVendo() {
   const { usuario } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const rubroParam = searchParams.get("rubro") as Rubro | null;
+  const qParam = searchParams.get("q") ?? "";
   const [rubroFiltro, setRubroFiltro] = useState<Rubro | undefined>(
     rubroParam && (RUBROS as readonly string[]).includes(rubroParam) ? rubroParam : undefined
   );
 
   const handleRubroChange = (r: Rubro | undefined) => {
     setRubroFiltro(r);
-    if (r) setSearchParams({ rubro: r }, { replace: true });
-    else setSearchParams({}, { replace: true });
+    const next: Record<string, string> = {};
+    if (r) next.rubro = r;
+    if (qParam) next.q = qParam;
+    setSearchParams(next, { replace: true });
   };
-  const [busqueda, setBusqueda] = useState("");
+  const [busqueda, setBusqueda] = useState(qParam);
   const [filtros, setFiltros] = useState<Filtros>({});
   const { publicaciones, loading } = usePublicacionesVendo(rubroFiltro);
 

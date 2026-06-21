@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@mercadovivo/hooks";
 import { usePublicacionesVendo } from "@mercadovivo/hooks";
 import { Spinner } from "@mercadovivo/ui";
@@ -15,97 +15,105 @@ const RUBRO_ICONS: Record<string, string> = {
 
 export default function HomePage() {
   const { usuario } = useAuth();
+  const navigate = useNavigate();
   const { publicaciones, loading } = usePublicacionesVendo();
-  const recientes = publicaciones.filter((p) => p.comercioId !== usuario?.id).slice(0, 8);
-  const ofertas = publicaciones.filter((p) => p.comercioId !== usuario?.id).slice(0, 4);
+  const productos = publicaciones.slice(0, 12);
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
-      {/* Hero banner */}
-      <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-5 text-white flex items-center justify-between overflow-hidden relative">
-        <div className="relative z-10">
-          <p className="text-green-200 text-xs font-semibold uppercase tracking-widest">Ofertas del día 🔥</p>
-          <h1 className="text-2xl font-extrabold mt-1 leading-tight max-w-[200px]">
-            Las mejores<br />ofertas de<br /><span className="text-amber-300">Gualeguay</span>
+    <div className="flex flex-col gap-10 max-w-5xl mx-auto">
+      {/* Hero */}
+      <div className="flex flex-col sm:flex-row items-center gap-6 pt-4 pb-2">
+        <div className="flex-1">
+          <p className="text-xs font-semibold text-green-600 uppercase tracking-widest mb-3">Gualeguay, Entre Ríos</p>
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight">
+            Tu mercado<br />local, online.
           </h1>
-          <Link to="/vendo" className="mt-4 inline-block bg-white text-green-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-green-50 transition-colors">
-            Ver ofertas →
-          </Link>
+          <p className="text-gray-500 mt-3 text-base leading-relaxed max-w-sm">
+            Encontrá productos de los comercios de tu ciudad. Pedí, pagá y retirá o recibilo en tu puerta.
+          </p>
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={() => navigate("/vendo")}
+              className="bg-gray-900 text-white font-semibold px-6 py-3 rounded-2xl hover:bg-gray-700 transition-colors text-sm"
+            >
+              Ver productos
+            </button>
+            <Link
+              to="/publicar"
+              className="border border-gray-200 text-gray-700 font-semibold px-6 py-3 rounded-2xl hover:bg-gray-50 transition-colors text-sm"
+            >
+              Publicar
+            </Link>
+          </div>
         </div>
-        <div className="text-6xl opacity-80 select-none">🛍️</div>
-        <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full" />
-        <div className="absolute right-12 -top-4 w-20 h-20 bg-white/10 rounded-full" />
+        <div className="hidden sm:flex w-64 h-64 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-3xl items-center justify-center flex-shrink-0">
+          <span className="text-8xl select-none">🛍️</span>
+        </div>
       </div>
 
       {/* Categorías */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-gray-900">Categorías</h2>
-          <Link to="/vendo" className="text-sm text-green-600 font-medium">Ver todo</Link>
-        </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4">
-          {RUBROS.slice(0, 8).map((rubro) => (
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Categorías</h2>
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
+          {RUBROS.map((rubro) => (
             <Link
               key={rubro}
               to={`/vendo?rubro=${encodeURIComponent(rubro)}`}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0"
+              className="flex items-center gap-2 flex-shrink-0 bg-white border border-gray-200 hover:border-gray-900 hover:bg-gray-50 text-gray-700 font-medium text-sm px-4 py-2.5 rounded-full transition-all"
             >
-              <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-2xl hover:bg-green-100 transition-colors border border-green-100">
-                {RUBRO_ICONS[rubro] ?? "📦"}
-              </div>
-              <span className="text-xs text-gray-600 font-medium text-center w-14 leading-tight">{rubro}</span>
+              <span>{RUBRO_ICONS[rubro] ?? "📦"}</span>
+              <span>{rubro}</span>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* Ofertas del día */}
+      {/* Productos */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-gray-900">Ofertas del día 🔥</h2>
-          <Link to="/vendo" className="text-sm text-green-600 font-medium">Ver todas</Link>
+        <div className="flex items-end justify-between mb-5">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Productos disponibles</h2>
+            <p className="text-sm text-gray-400 mt-0.5">Publicaciones activas en Gualeguay</p>
+          </div>
+          <Link to="/vendo" className="text-sm font-semibold text-green-600 hover:text-green-700">Ver todos →</Link>
         </div>
+
         {loading ? (
-          <div className="py-8 flex justify-center"><Spinner /></div>
-        ) : ofertas.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-dashed border-gray-200 py-10 text-center text-gray-400 text-sm">
-            Todavía no hay publicaciones. <Link to="/publicar" className="text-green-600 font-medium">¡Publicá la primera!</Link>
+          <div className="py-20 flex justify-center"><Spinner /></div>
+        ) : productos.length === 0 ? (
+          <div className="border border-dashed border-gray-200 rounded-2xl py-16 text-center">
+            <p className="text-gray-400 text-sm">Todavía no hay productos.</p>
+            <Link to="/publicar" className="mt-2 inline-block text-sm font-semibold text-green-600 hover:underline">Publicá el primero</Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {ofertas.map((p) => <CardVendo key={p.id} publicacion={p} />)}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {productos.map((p) => <CardVendo key={p.id} publicacion={p} />)}
           </div>
         )}
       </div>
 
-      {/* Más publicaciones */}
-      {!loading && recientes.length > 4 && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-gray-900">Nuevos productos</h2>
-            <Link to="/vendo" className="text-sm text-green-600 font-medium">Ver todo</Link>
+      {/* Banner comercios */}
+      {(usuario?.rol === "comercio" || usuario?.rol === "admin") ? (
+        <div className="bg-gray-900 text-white rounded-3xl p-6 flex items-center justify-between gap-4">
+          <div>
+            <p className="font-bold text-lg">Tu tienda digital</p>
+            <p className="text-gray-400 text-sm mt-1">Configurá tu tienda, activá productos y compartí el QR con tus clientes.</p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {recientes.slice(4).map((p) => <CardVendo key={p.id} publicacion={p} />)}
+          <Link to="/admin/tienda" className="flex-shrink-0 bg-white text-gray-900 font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-gray-100 transition-colors">
+            Configurar
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-gray-50 rounded-3xl p-6 flex items-center justify-between gap-4">
+          <div>
+            <p className="font-bold text-gray-900">¿Tenés un comercio?</p>
+            <p className="text-gray-500 text-sm mt-1">Publicá tus productos y llegá a más clientes en Gualeguay.</p>
           </div>
+          <Link to="/publicar" className="flex-shrink-0 bg-gray-900 text-white font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-gray-700 transition-colors">
+            Publicar
+          </Link>
         </div>
       )}
-
-      {/* Beneficios */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
-        {[
-          { icon: "🛡️", title: "Compra segura", desc: "Todos los días" },
-          { icon: "🚀", title: "Entrega rápida", desc: "En Gualeguay" },
-          { icon: "💬", title: "Atención por WhatsApp", desc: "Respuesta rápida" },
-          { icon: "💰", title: "Precios bajos", desc: "En todos los rubros" },
-        ].map((item) => (
-          <div key={item.title} className="bg-white rounded-2xl border border-gray-100 p-3 flex flex-col items-center text-center gap-1">
-            <span className="text-2xl">{item.icon}</span>
-            <p className="text-xs font-semibold text-gray-800 leading-tight">{item.title}</p>
-            <p className="text-xs text-gray-400">{item.desc}</p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
