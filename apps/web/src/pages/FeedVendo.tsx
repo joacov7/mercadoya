@@ -18,7 +18,6 @@ export default function FeedVendo() {
 
   const filtradas = useMemo(() => {
     return publicaciones
-      .filter((p) => usuario?.id !== p.comercioId)
       .filter((p) =>
         p.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
         p.descripcion.toLowerCase().includes(busqueda.toLowerCase())
