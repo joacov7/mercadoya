@@ -124,7 +124,9 @@ export interface ConfigTienda {
   metodosPago: MetodoPago[];
   metodosEnvio: MetodoEnvio[];
   costoDelivery: number;
+  montoMinimoDelivery: number;
   zonaDelivery: string;
+  recargosPago: Record<MetodoPago, number>;
   updatedAt: number;
 }
 

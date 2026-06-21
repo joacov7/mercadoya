@@ -1,6 +1,7 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
+import CarritoFlotante from "../CarritoFlotante";
 
 export default function Layout() {
   return (
@@ -9,6 +10,7 @@ export default function Layout() {
       <main className="flex-1 container mx-auto px-4 py-6 max-w-6xl pb-24 md:pb-6">
         <Outlet />
       </main>
+      <CarritoFlotante />
     </div>
   );
 }

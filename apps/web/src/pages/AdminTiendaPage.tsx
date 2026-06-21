@@ -25,7 +25,9 @@ export default function AdminTiendaPage() {
     metodosPago: ["efectivo"],
     metodosEnvio: ["retiro"],
     costoDelivery: 0,
+    montoMinimoDelivery: 0,
     zonaDelivery: "",
+    recargosPago: { efectivo: 0, transferencia: 0, debito: 0, tarjeta: 0 },
     updatedAt: 0,
   });
   const [productos, setProductos] = useState<PublicacionVendo[]>([]);
@@ -105,20 +107,36 @@ export default function AdminTiendaPage() {
         </div>
       </div>
 
-      {/* Métodos de pago */}
+      {/* Métodos de pago y recargos */}
       <div className="bg-white rounded-xl border p-5">
-        <h2 className="font-semibold text-gray-800 mb-3">Métodos de pago aceptados</h2>
-        <div className="grid grid-cols-2 gap-2">
-          {METODOS_PAGO.map((m) => (
-            <button
-              key={m}
-              onClick={() => togglePago(m)}
-              className={`p-3 rounded-lg border-2 text-left text-sm font-medium transition-colors ${config.metodosPago.includes(m) ? "border-green-600 bg-green-50 text-green-700" : "border-gray-200 text-gray-600 hover:border-gray-300"}`}
-            >
-              {LABEL_PAGO[m]}
-            </button>
-          ))}
+        <h2 className="font-semibold text-gray-800 mb-1">Métodos de pago</h2>
+        <p className="text-xs text-gray-400 mb-3">Activá los que aceptás y configurá recargo/descuento (%)</p>
+        <div className="space-y-2">
+          {METODOS_PAGO.map((m) => {
+            const activo = config.metodosPago.includes(m);
+            return (
+              <div key={m} className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-colors ${activo ? "border-green-600 bg-green-50" : "border-gray-200"}`}>
+                <button onClick={() => togglePago(m)} className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${activo ? "bg-green-500" : "bg-gray-300"}`}>
+                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${activo ? "translate-x-4" : "translate-x-0.5"}`} />
+                </button>
+                <span className="text-sm font-medium text-gray-700 flex-1">{LABEL_PAGO[m]}</span>
+                {activo && (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      value={config.recargosPago?.[m] ?? 0}
+                      onChange={(e) => setConfig((c) => ({ ...c, recargosPago: { ...c.recargosPago, [m]: Number(e.target.value) } }))}
+                      className="w-16 border rounded-lg px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="0"
+                    />
+                    <span className="text-xs text-gray-400">%</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
+        <p className="text-xs text-gray-400 mt-2">Positivo = recargo, negativo = descuento. Ej: tarjeta +10, efectivo -5</p>
       </div>
 
       {/* Métodos de envío */}
@@ -138,7 +156,7 @@ export default function AdminTiendaPage() {
         {config.metodosEnvio.includes("delivery") && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600 whitespace-nowrap w-28">Costo envío</label>
+              <label className="text-sm text-gray-600 whitespace-nowrap w-28">Costo delivery</label>
               <input
                 type="number"
                 value={config.costoDelivery}

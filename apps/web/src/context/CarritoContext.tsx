@@ -4,11 +4,12 @@ import type { ItemCarrito } from "@mercadovivo/types";
 interface CarritoCtx {
   items: ItemCarrito[];
   comercioId: string | null;
-  agregar: (item: ItemCarrito, comercioId: string) => void;
+  agregar: (item: Omit<ItemCarrito, "cantidad">, cantidad: number, comercioId: string) => void;
   quitar: (publicacionId: string) => void;
   cambiarCantidad: (publicacionId: string, cantidad: number) => void;
   vaciar: () => void;
-  total: number;
+  subtotal: number;
+  totalItems: number;
 }
 
 const Ctx = createContext<CarritoCtx | null>(null);
@@ -17,7 +18,7 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<ItemCarrito[]>([]);
   const [comercioId, setComercioId] = useState<string | null>(null);
 
-  const agregar = useCallback((item: ItemCarrito, cid: string) => {
+  const agregar = useCallback((item: Omit<ItemCarrito, "cantidad">, cantidad: number, cid: string) => {
     if (comercioId && comercioId !== cid) {
       if (!confirm("Tenés productos de otro comercio en el carrito. ¿Vaciarlo y empezar de nuevo?")) return;
       setItems([]);
@@ -25,8 +26,8 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
     setComercioId(cid);
     setItems((prev) => {
       const existe = prev.find((i) => i.publicacionId === item.publicacionId);
-      if (existe) return prev.map((i) => i.publicacionId === item.publicacionId ? { ...i, cantidad: i.cantidad + 1 } : i);
-      return [...prev, { ...item, cantidad: 1 }];
+      if (existe) return prev.map((i) => i.publicacionId === item.publicacionId ? { ...i, cantidad: i.cantidad + cantidad } : i);
+      return [...prev, { ...item, cantidad }];
     });
   }, [comercioId]);
 
@@ -45,10 +46,11 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
 
   const vaciar = useCallback(() => { setItems([]); setComercioId(null); }, []);
 
-  const total = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+  const subtotal = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+  const totalItems = items.reduce((s, i) => s + i.cantidad, 0);
 
   return (
-    <Ctx.Provider value={{ items, comercioId, agregar, quitar, cambiarCantidad, vaciar, total }}>
+    <Ctx.Provider value={{ items, comercioId, agregar, quitar, cambiarCantidad, vaciar, subtotal, totalItems }}>
       {children}
     </Ctx.Provider>
   );
