@@ -1,147 +1,111 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@mercadovivo/hooks";
-import { useChats } from "@mercadovivo/hooks";
-import { usePublicacionesVendo, usePublicacionesBusco } from "@mercadovivo/hooks";
+import { usePublicacionesVendo } from "@mercadovivo/hooks";
 import { Spinner } from "@mercadovivo/ui";
 import { CardVendo } from "../components/feed/CardVendo";
+import { RUBROS } from "@mercadovivo/config";
+
+const RUBRO_ICONS: Record<string, string> = {
+  "Almacén": "🛒", "Carnicería": "🥩", "Verdulería": "🥦",
+  "Ferretería": "🔧", "Veterinaria": "🐾", "Farmacia": "💊",
+  "Indumentaria": "👕", "Electrónica": "📱", "Corralón": "🧱",
+  "Gastronomía": "🍕", "Servicios": "🛠️", "Otros": "📦",
+};
 
 export default function HomePage() {
   const { usuario } = useAuth();
-  const { unreadCount, chats } = useChats(usuario?.id);
-  const { publicaciones: vendo, loading: loadingVendo } = usePublicacionesVendo();
-  const { publicaciones: busco, loading: loadingBusco } = usePublicacionesBusco();
-
-  const vendoRecientes = vendo.filter((p) => p.comercioId !== usuario?.id).slice(0, 4);
-  const buscoRecientes = busco.filter((p) => p.clienteId !== usuario?.id).slice(0, 3);
-  const chatsRecientes = chats.slice(0, 3);
+  const { publicaciones, loading } = usePublicacionesVendo();
+  const recientes = publicaciones.filter((p) => p.comercioId !== usuario?.id).slice(0, 8);
+  const ofertas = publicaciones.filter((p) => p.comercioId !== usuario?.id).slice(0, 4);
 
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto">
-      {/* Saludo */}
-      <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-3xl p-6 text-white">
-        <p className="text-green-200 text-sm font-medium">Bienvenido de vuelta</p>
-        <h1 className="text-2xl font-bold mt-1">{usuario?.nombre?.split(" ")[0]} 👋</h1>
-        <div className="flex gap-4 mt-4">
-          <Link to="/publicar" className="bg-white/20 hover:bg-white/30 transition-colors px-4 py-2 rounded-xl text-sm font-semibold">
-            + Publicar
-          </Link>
-          <Link to="/vendo" className="bg-white/20 hover:bg-white/30 transition-colors px-4 py-2 rounded-xl text-sm font-semibold">
-            Ver Vendo
-          </Link>
-          <Link to="/busco" className="bg-white/20 hover:bg-white/30 transition-colors px-4 py-2 rounded-xl text-sm font-semibold">
-            Ver Busco
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
+      {/* Hero banner */}
+      <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-5 text-white flex items-center justify-between overflow-hidden relative">
+        <div className="relative z-10">
+          <p className="text-green-200 text-xs font-semibold uppercase tracking-widest">Ofertas del día 🔥</p>
+          <h1 className="text-2xl font-extrabold mt-1 leading-tight max-w-[200px]">
+            Las mejores<br />ofertas de<br /><span className="text-amber-300">Gualeguay</span>
+          </h1>
+          <Link to="/vendo" className="mt-4 inline-block bg-white text-green-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-green-50 transition-colors">
+            Ver ofertas →
           </Link>
         </div>
+        <div className="text-6xl opacity-80 select-none">🛍️</div>
+        <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full" />
+        <div className="absolute right-12 -top-4 w-20 h-20 bg-white/10 rounded-full" />
       </div>
 
-      {/* Stats rápidas */}
-      <div className="grid grid-cols-3 gap-3">
-        <Link to="/chats" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-1 hover:shadow-md transition-shadow relative">
-          <span className="text-2xl">💬</span>
-          <p className="text-2xl font-bold text-gray-900">{chats.length}</p>
-          <p className="text-xs text-gray-400">Conversaciones</p>
-          {unreadCount > 0 && (
-            <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-              {unreadCount}
-            </span>
-          )}
-        </Link>
-        <Link to="/mis-publicaciones" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-1 hover:shadow-md transition-shadow">
-          <span className="text-2xl">🏪</span>
-          <p className="text-2xl font-bold text-gray-900">—</p>
-          <p className="text-xs text-gray-400">Mis publicaciones</p>
-        </Link>
-        <Link to="/perfil" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-1 hover:shadow-md transition-shadow">
-          <span className="text-2xl">⭐</span>
-          <p className="text-2xl font-bold text-gray-900">
-            {usuario?.reputacion?.total ?? "—"}
-          </p>
-          <p className="text-xs text-gray-400">Calificaciones</p>
-        </Link>
-      </div>
-
-      {/* Chats recientes con no leídos primero */}
-      {chatsRecientes.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-900">Conversaciones recientes</h2>
-            <Link to="/chats" className="text-sm text-green-600 font-medium">Ver todas</Link>
-          </div>
-          <div className="flex flex-col gap-2">
-            {chatsRecientes.map((chat) => {
-              const noLeido = chat.lastSenderId && chat.lastSenderId !== usuario?.id;
-              return (
-                <Link key={chat.id} to={`/chat/${chat.id}`}>
-                  <div className={`flex items-center gap-3 p-4 rounded-2xl border transition-all hover:shadow-sm ${
-                    noLeido ? "bg-green-50 border-green-200" : "bg-white border-gray-100"
-                  }`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0 ${
-                      chat.tipo === "busco" ? "bg-amber-100" : "bg-green-100"
-                    }`}>
-                      {chat.tipo === "busco" ? "🔍" : "🏪"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm truncate ${noLeido ? "font-semibold text-gray-900" : "text-gray-600"}`}>
-                        {chat.lastMessage ?? "Sin mensajes"}
-                      </p>
-                      <p className="text-xs text-gray-400 capitalize">{chat.tipo}</p>
-                    </div>
-                    {noLeido && <div className="w-2.5 h-2.5 bg-green-500 rounded-full flex-shrink-0" />}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Vendo reciente */}
+      {/* Categorías */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-900">Últimos en Vendo</h2>
+          <h2 className="font-bold text-gray-900">Categorías</h2>
           <Link to="/vendo" className="text-sm text-green-600 font-medium">Ver todo</Link>
         </div>
-        {loadingVendo ? (
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4">
+          {RUBROS.slice(0, 8).map((rubro) => (
+            <Link
+              key={rubro}
+              to={`/vendo?rubro=${encodeURIComponent(rubro)}`}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0"
+            >
+              <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-2xl hover:bg-green-100 transition-colors border border-green-100">
+                {RUBRO_ICONS[rubro] ?? "📦"}
+              </div>
+              <span className="text-xs text-gray-600 font-medium text-center w-14 leading-tight">{rubro}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Ofertas del día */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-gray-900">Ofertas del día 🔥</h2>
+          <Link to="/vendo" className="text-sm text-green-600 font-medium">Ver todas</Link>
+        </div>
+        {loading ? (
           <div className="py-8 flex justify-center"><Spinner /></div>
+        ) : ofertas.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-dashed border-gray-200 py-10 text-center text-gray-400 text-sm">
+            Todavía no hay publicaciones. <Link to="/publicar" className="text-green-600 font-medium">¡Publicá la primera!</Link>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {vendoRecientes.map((p) => (
-              <CardVendo key={p.id} publicacion={p} />
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {ofertas.map((p) => <CardVendo key={p.id} publicacion={p} />)}
           </div>
         )}
       </div>
 
-      {/* Busco reciente */}
-      {!loadingBusco && buscoRecientes.length > 0 && (
+      {/* Más publicaciones */}
+      {!loading && recientes.length > 4 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-900">Vecinos que buscan</h2>
-            <Link to="/busco" className="text-sm text-green-600 font-medium">Ver todo</Link>
+            <h2 className="font-bold text-gray-900">Nuevos productos</h2>
+            <Link to="/vendo" className="text-sm text-green-600 font-medium">Ver todo</Link>
           </div>
-          <div className="flex flex-col gap-2">
-            {buscoRecientes.map((p) => (
-              <Link key={p.id} to={`/busco/${p.id}`}>
-                <div className="bg-white rounded-2xl border border-gray-100 p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">🔍</span>
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{p.titulo}</p>
-                        <p className="text-xs text-gray-400">{p.rubro}</p>
-                      </div>
-                    </div>
-                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </div>
-              </Link>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {recientes.slice(4).map((p) => <CardVendo key={p.id} publicacion={p} />)}
           </div>
         </div>
       )}
+
+      {/* Beneficios */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+        {[
+          { icon: "🛡️", title: "Compra segura", desc: "Todos los días" },
+          { icon: "🚀", title: "Entrega rápida", desc: "En Gualeguay" },
+          { icon: "💬", title: "Atención por WhatsApp", desc: "Respuesta rápida" },
+          { icon: "💰", title: "Precios bajos", desc: "En todos los rubros" },
+        ].map((item) => (
+          <div key={item.title} className="bg-white rounded-2xl border border-gray-100 p-3 flex flex-col items-center text-center gap-1">
+            <span className="text-2xl">{item.icon}</span>
+            <p className="text-xs font-semibold text-gray-800 leading-tight">{item.title}</p>
+            <p className="text-xs text-gray-400">{item.desc}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
